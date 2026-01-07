@@ -1,0 +1,49 @@
+
+export interface Word {
+  arabic: string;
+  english: string;
+  tamil: string;
+}
+
+export interface Ayah {
+  number: number;
+  text: string;
+  translation_en: string;
+  translation_ta: string;
+  words: Word[];
+}
+
+export interface Surah {
+  id: number;
+  name: string;
+  name_ar: string;
+  description: string;
+  total_ayahs: number;
+  ayahs: Ayah[];
+}
+
+export interface JuzInfo {
+  id: number;
+  startSurah: number;
+  startAyah: number;
+  description: string;
+}
+
+export interface HifzProgress {
+  surahId: number;
+  ayahsMemorized: number[];
+  isComplete: boolean;
+}
+
+export interface PastReview {
+  id: string;
+  surahName: string;
+  ayahNum: number;
+  feedback: string;
+  timestamp: number;
+  audioBase64: string;
+}
+
+export type ViewState = 'surah-list' | 'reader' | 'tracker' | 'ai-verify' | 'tajweed-tips';
+export type ListMode = 'surah' | 'juz';
+export type HifzMethod = 'standard' | 'chain';

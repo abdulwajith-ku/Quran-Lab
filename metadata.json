@@ -1,0 +1,7 @@
+{
+  "name": "Al-Hifz Companion",
+  "description": "A comprehensive Quran memorization app with word-by-word Tamil/English translation, Hifz tracking, and AI-powered recitation verification.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
