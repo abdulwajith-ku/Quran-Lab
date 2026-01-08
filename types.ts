@@ -5,12 +5,20 @@ export interface Word {
   tamil: string;
 }
 
+export interface TajweedRule {
+  rule: string;
+  explanation_en: string;
+  explanation_ta: string;
+  location: string; // The part of the Arabic text this applies to
+}
+
 export interface Ayah {
   number: number;
   text: string;
   translation_en: string;
   translation_ta: string;
   words: Word[];
+  tajweed_rules?: TajweedRule[];
 }
 
 export interface Surah {

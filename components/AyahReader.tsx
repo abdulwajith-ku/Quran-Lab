@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Surah, Ayah, Word, HifzMethod } from '../types';
-import { fetchSurahData, getWordByWordTranslation } from '../services/quranService';
+import { Surah, Ayah, Word, HifzMethod, TajweedRule } from '../types';
+import { fetchSurahData, getWordByWordTranslation, getAyahTajweedRules } from '../services/quranService';
 
 interface AyahReaderProps {
   surahId: number;
@@ -18,6 +18,8 @@ const AyahReader: React.FC<AyahReaderProps> = ({ surahId, onBack, isAyahMemorize
   const [showWordByWord, setShowWordByWord] = useState(true);
   const [playingAyah, setPlayingAyah] = useState<number | null>(null);
   const [wbwData, setWbwData] = useState<Record<number, Word[]>>({});
+  const [tajweedData, setTajweedData] = useState<Record<number, TajweedRule[]>>({});
+  const [loadingTajweed, setLoadingTajweed] = useState<Record<number, boolean>>({});
   
   // Hifz Mode State
   const [hifzMode, setHifzMode] = useState(false);
@@ -27,7 +29,6 @@ const AyahReader: React.FC<AyahReaderProps> = ({ surahId, onBack, isAyahMemorize
   const [repeats, setRepeats] = useState(3);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   
-  // Internal Playback State
   const playbackStateRef = useRef({
     currentLoop: 0,
     chainEnd: 1,
@@ -60,6 +61,17 @@ const AyahReader: React.FC<AyahReaderProps> = ({ surahId, onBack, isAyahMemorize
     if (wbwData[ayah.number]) return;
     const words = await getWordByWordTranslation(ayah.text);
     setWbwData(prev => ({ ...prev, [ayah.number]: words }));
+  };
+
+  const loadTajweed = async (ayah: Ayah) => {
+    if (tajweedData[ayah.number]) return;
+    setLoadingTajweed(prev => ({ ...prev, [ayah.number]: true }));
+    try {
+      const rules = await getAyahTajweedRules(ayah.text);
+      setTajweedData(prev => ({ ...prev, [ayah.number]: rules }));
+    } finally {
+      setLoadingTajweed(prev => ({ ...prev, [ayah.number]: false }));
+    }
   };
 
   const getAudioUrl = (sId: number, aNum: number) => {
@@ -111,19 +123,15 @@ const AyahReader: React.FC<AyahReaderProps> = ({ surahId, onBack, isAyahMemorize
         }
       }
     } else {
-      // Corrected Hifz Chain Method Logic
       if (s.phase === 'focus') {
         if (s.currentLoop + 1 < repeats) {
           s.currentLoop += 1;
           setUiState({ ...s });
           playAyahAudio(s.chainEnd, true);
         } else {
-          // Finished individual mastery of current ayah
           if (s.chainEnd === hifzStart) {
-            // Very first ayah? Skip chain phase (as focus == chain) and move to next focus
             moveToNextFocus();
           } else {
-            // Start the cumulative chain phase for the sequence hifzStart -> chainEnd
             s.phase = 'chain';
             s.currentLoop = 0;
             s.currentAyahIndex = hifzStart;
@@ -132,20 +140,17 @@ const AyahReader: React.FC<AyahReaderProps> = ({ surahId, onBack, isAyahMemorize
           }
         }
       } else {
-        // Chain Phase: Playing sequence hifzStart -> chainEnd
         if (s.currentAyahIndex < s.chainEnd) {
           s.currentAyahIndex += 1;
           setUiState({ ...s });
           playAyahAudio(s.currentAyahIndex, true);
         } else {
-          // Finished one full run of the chain
           if (s.currentLoop + 1 < repeats) {
             s.currentLoop += 1;
             s.currentAyahIndex = hifzStart;
             setUiState({ ...s });
             playAyahAudio(s.currentAyahIndex, true);
           } else {
-            // All repeats for this chain size done, move to next ayah
             moveToNextFocus();
           }
         }
@@ -162,7 +167,6 @@ const AyahReader: React.FC<AyahReaderProps> = ({ surahId, onBack, isAyahMemorize
       s.currentAyahIndex = s.chainEnd;
       setUiState({ ...s });
       playAyahAudio(s.chainEnd, true);
-      // Scroll into view
       document.getElementById(`ayah-${s.chainEnd}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     } else {
       stopPractice();
@@ -173,7 +177,7 @@ const AyahReader: React.FC<AyahReaderProps> = ({ surahId, onBack, isAyahMemorize
     playbackStateRef.current = {
       currentLoop: 0,
       chainEnd: hifzStart,
-      phase: hifzMethod === 'chain' ? 'focus' : 'focus', // Both start with focus
+      phase: 'focus',
       currentAyahIndex: hifzStart
     };
     setUiState({ ...playbackStateRef.current });
@@ -220,7 +224,6 @@ const AyahReader: React.FC<AyahReaderProps> = ({ surahId, onBack, isAyahMemorize
         </div>
       </div>
 
-      {/* Improved Hifz Mode Panel */}
       <div className="mb-8 bg-slate-900 text-white rounded-[2.5rem] p-7 shadow-2xl relative overflow-hidden border border-white/5">
         <div className="absolute top-0 right-0 p-4 opacity-5 text-7xl rotate-12">🧠</div>
         <div className="relative z-10">
@@ -322,7 +325,6 @@ const AyahReader: React.FC<AyahReaderProps> = ({ surahId, onBack, isAyahMemorize
                 </button>
               </div>
 
-              {/* Progress HUD */}
               {playingAyah && (
                 <div className="bg-emerald-500/10 p-5 rounded-[2rem] border border-emerald-500/20 space-y-4">
                   <div className="flex justify-between items-center">
@@ -349,13 +351,6 @@ const AyahReader: React.FC<AyahReaderProps> = ({ surahId, onBack, isAyahMemorize
                     </div>
                     <span className="text-[10px] font-black italic whitespace-nowrap">V{playingAyah}</span>
                   </div>
-
-                  {hifzMethod === 'chain' && (
-                    <div className="flex justify-between items-center text-[9px] font-medium text-slate-400 bg-black/20 px-3 py-2 rounded-xl">
-                      <span>{uiState.phase === 'focus' ? 'Individual Master' : 'Sequential Review'}</span>
-                      <span className="text-emerald-500">Step {uiState.chainEnd - hifzStart + 1}</span>
-                    </div>
-                  )}
                 </div>
               )}
             </div>
@@ -431,6 +426,42 @@ const AyahReader: React.FC<AyahReaderProps> = ({ surahId, onBack, isAyahMemorize
                 )}
               </div>
             )}
+
+            {/* Per-Verse Tajweed Guidance Section */}
+            <div className="mb-10">
+              {tajweedData[ayah.number] ? (
+                <div className="bg-indigo-50/50 rounded-[2.5rem] p-6 border border-indigo-100 space-y-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-xl">✨</span>
+                    <h4 className="text-xs font-black text-indigo-900 uppercase tracking-widest">Tajweed & Tartil Guide</h4>
+                  </div>
+                  <div className="space-y-4">
+                    {tajweedData[ayah.number].map((rule, idx) => (
+                      <div key={idx} className="bg-white p-4 rounded-2xl border border-indigo-50 shadow-sm">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="px-3 py-1 bg-indigo-600 text-white text-[9px] font-black rounded-lg uppercase tracking-wider">{rule.rule}</span>
+                          <span className="quran-font text-sm text-indigo-900 font-bold">{rule.location}</span>
+                        </div>
+                        <p className="text-xs text-slate-600 leading-relaxed mb-1 font-medium">{rule.explanation_en}</p>
+                        <p className="text-xs text-indigo-700 tamil-font leading-relaxed italic">{rule.explanation_ta}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <button 
+                  onClick={() => loadTajweed(ayah)}
+                  disabled={loadingTajweed[ayah.number]}
+                  className="w-full py-5 bg-indigo-50 text-indigo-700 rounded-[2.5rem] text-[10px] font-black uppercase tracking-[0.2em] border border-indigo-100 hover:bg-indigo-100 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+                >
+                  {loadingTajweed[ayah.number] ? (
+                    <span className="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></span>
+                  ) : (
+                    <><span>💎</span> View Tajweed & Tartil Guide</>
+                  )}
+                </button>
+              )}
+            </div>
 
             <div className="space-y-6 pt-8 border-t border-slate-100">
               <div className="flex gap-4">

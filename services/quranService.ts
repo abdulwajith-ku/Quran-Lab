@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { Surah, Ayah, Word } from "../types";
+import { Surah, Ayah, Word, TajweedRule } from "../types";
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || "" });
 
@@ -8,7 +8,6 @@ const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || "" });
  * Fetches Surah content (Arabic, English, Tamil) from public APIs
  */
 export const fetchSurahData = async (surahId: number): Promise<Surah> => {
-  // We fetch 3 editions: Arabic (Uthmani), English (Sahih Intl), and Tamil (Jan Turst)
   const response = await fetch(`https://api.alquran.cloud/v1/surah/${surahId}/editions/quran-uthmani,en.sahih,ta.tamil`);
   const data = await response.json();
 
@@ -21,7 +20,7 @@ export const fetchSurahData = async (surahId: number): Promise<Surah> => {
     text: ayah.text,
     translation_en: english.ayahs[index].text,
     translation_ta: tamil.ayahs[index].text,
-    words: [] // Will be populated on-demand or via AI
+    words: []
   }));
 
   return {
@@ -35,7 +34,7 @@ export const fetchSurahData = async (surahId: number): Promise<Surah> => {
 };
 
 /**
- * Uses Gemini to generate word-by-word translation for a specific Ayah
+ * Uses Gemini to generate word-by-word translation
  */
 export const getWordByWordTranslation = async (ayahText: string): Promise<Word[]> => {
   const prompt = `Break down the following Arabic Ayah into individual words and provide their English and Tamil translations. 
@@ -66,6 +65,50 @@ export const getWordByWordTranslation = async (ayahText: string): Promise<Word[]
     return JSON.parse(response.text || "[]");
   } catch (error) {
     console.error("Gemini WBW Error:", error);
+    return [];
+  }
+};
+
+/**
+ * Uses Gemini to provide Tartil and Tajweed rules for a specific Ayah
+ */
+export const getAyahTajweedRules = async (ayahText: string): Promise<TajweedRule[]> => {
+  const prompt = `Analyze the following Arabic Ayah for Tajweed and Tartil rules. 
+  Identify rules like Qalqalah, Ghunnah, Ikhfa, Idgham, Madd, and correct articulation (Makhraj).
+  Provide a list of rules found. For each rule, include:
+  1. The name of the rule (e.g., "Qalqalah")
+  2. The specific part of the text it applies to (location)
+  3. A short explanation in English
+  4. A short explanation in Tamil
+  
+  Ayah: "${ayahText}"
+  Format as a JSON array.`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              rule: { type: Type.STRING },
+              location: { type: Type.STRING },
+              explanation_en: { type: Type.STRING },
+              explanation_ta: { type: Type.STRING }
+            },
+            required: ["rule", "location", "explanation_en", "explanation_ta"]
+          }
+        }
+      }
+    });
+
+    return JSON.parse(response.text || "[]");
+  } catch (error) {
+    console.error("Gemini Tajweed Error:", error);
     return [];
   }
 };
