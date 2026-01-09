@@ -52,15 +52,14 @@ export const fetchSurahData = async (surahId: number): Promise<Surah> => {
  */
 export const searchQuranContent = async (query: string): Promise<SearchResult[]> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  const prompt = `Search Quran for: "${query}". Return top 10 matches. 
-  Include: surahId, surahName, ayahNumber, arabicText, snippet(EN), tamilSnippet(TA), relevance. 
-  Output: JSON array.`;
+  const prompt = `Search the Quran for the topic or verse: "${query}". Return the most relevant matches.`;
 
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: prompt,
       config: {
+        systemInstruction: "You are a Quran search engine. Find relevant verses and return them in a structured JSON format.",
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.ARRAY,
@@ -81,7 +80,8 @@ export const searchQuranContent = async (query: string): Promise<SearchResult[]>
       }
     });
 
-    return JSON.parse(response.text || "[]");
+    const text = response.text;
+    return text ? JSON.parse(text) : [];
   } catch (error) {
     console.error("Quran Search Error:", error);
     return [];
@@ -93,30 +93,33 @@ export const searchQuranContent = async (query: string): Promise<SearchResult[]>
  */
 export const getWordByWordTranslation = async (ayahText: string): Promise<Word[]> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  const prompt = `Convert Ayah to JSON word-by-word: "${ayahText}". Props: "arabic", "english", "tamil".`;
+  const prompt = `Analyze this Quranic Ayah and provide a word-by-word translation. Split the text into individual meaningful units (words). Ayah: "${ayahText}"`;
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-3-pro-preview',
       contents: prompt,
       config: {
+        systemInstruction: "You are an expert Quranic linguist. Translate the given Ayah word-by-word into English and Tamil. Return a JSON array of objects.",
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.ARRAY,
           items: {
             type: Type.OBJECT,
             properties: {
-              arabic: { type: Type.STRING },
-              english: { type: Type.STRING },
-              tamil: { type: Type.STRING }
+              arabic: { type: Type.STRING, description: "The specific word in Arabic" },
+              english: { type: Type.STRING, description: "Direct English meaning" },
+              tamil: { type: Type.STRING, description: "Direct Tamil meaning" }
             },
-            required: ["arabic", "english", "tamil"]
+            required: ["arabic", "english", "tamil"],
+            propertyOrdering: ["arabic", "english", "tamil"]
           }
         }
       }
     });
 
-    return JSON.parse(response.text || "[]");
+    const text = response.text;
+    return text ? JSON.parse(text) : [];
   } catch (error) {
     console.error("Gemini WBW Error:", error);
     return [];
@@ -128,33 +131,34 @@ export const getWordByWordTranslation = async (ayahText: string): Promise<Word[]
  */
 export const getAyahTajweedRules = async (ayahText: string): Promise<TajweedRule[]> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  const prompt = `List Tajweed rules for: "${ayahText}". 
-  Props: "rule"(name), "location"(text), "explanation_en", "explanation_ta". 
-  Output: JSON array.`;
+  const prompt = `Identify all Tajweed and Tartil rules present in this Ayah. Focus on practical recitation rules like Noon Sakinah, Qalqalah, Ghunnah, etc. Ayah: "${ayahText}"`;
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-3-pro-preview',
       contents: prompt,
       config: {
+        systemInstruction: "You are a master Quran teacher. Analyze the Ayah and list the applicable Tajweed rules in a JSON format. Provide explanations in both English and Tamil.",
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.ARRAY,
           items: {
             type: Type.OBJECT,
             properties: {
-              rule: { type: Type.STRING },
-              location: { type: Type.STRING },
-              explanation_en: { type: Type.STRING },
-              explanation_ta: { type: Type.STRING }
+              rule: { type: Type.STRING, description: "Name of the Tajweed rule" },
+              location: { type: Type.STRING, description: "The specific word or fragment where the rule applies" },
+              explanation_en: { type: Type.STRING, description: "Explanation in English" },
+              explanation_ta: { type: Type.STRING, description: "Explanation in Tamil" }
             },
-            required: ["rule", "location", "explanation_en", "explanation_ta"]
+            required: ["rule", "location", "explanation_en", "explanation_ta"],
+            propertyOrdering: ["rule", "location", "explanation_en", "explanation_ta"]
           }
         }
       }
     });
 
-    return JSON.parse(response.text || "[]");
+    const text = response.text;
+    return text ? JSON.parse(text) : [];
   } catch (error) {
     console.error("Gemini Tajweed Error:", error);
     return [];

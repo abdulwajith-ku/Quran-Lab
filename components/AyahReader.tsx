@@ -49,6 +49,7 @@ const AyahReader: React.FC<AyahReaderProps> = ({
       try {
         const data = await fetchSurahData(surahId);
         setSurah(data);
+        // Pre-fetch first 5 Ayahs details
         data.ayahs.slice(0, 5).forEach(ayah => {
           preFetchAyahDetails(ayah);
         });
@@ -70,22 +71,30 @@ const AyahReader: React.FC<AyahReaderProps> = ({
   };
 
   const loadWbw = async (ayah: Ayah) => {
-    if (wbwData[ayah.number] || loadingWbw[ayah.number]) return;
+    if ((wbwData[ayah.number] && wbwData[ayah.number].length > 0) || loadingWbw[ayah.number]) return;
     setLoadingWbw(prev => ({ ...prev, [ayah.number]: true }));
     try {
       const words = await getWordByWordTranslation(ayah.text);
-      setWbwData(prev => ({ ...prev, [ayah.number]: words }));
+      if (words && words.length > 0) {
+        setWbwData(prev => ({ ...prev, [ayah.number]: words }));
+      }
+    } catch (err) {
+      console.error("WBW Loading failed", err);
     } finally {
       setLoadingWbw(prev => ({ ...prev, [ayah.number]: false }));
     }
   };
 
   const loadTajweed = async (ayah: Ayah) => {
-    if (tajweedData[ayah.number] || loadingTajweed[ayah.number]) return;
+    if ((tajweedData[ayah.number] && tajweedData[ayah.number].length > 0) || loadingTajweed[ayah.number]) return;
     setLoadingTajweed(prev => ({ ...prev, [ayah.number]: true }));
     try {
       const rules = await getAyahTajweedRules(ayah.text);
-      setTajweedData(prev => ({ ...prev, [ayah.number]: rules }));
+      if (rules && rules.length > 0) {
+        setTajweedData(prev => ({ ...prev, [ayah.number]: rules }));
+      }
+    } catch (err) {
+      console.error("Tajweed Loading failed", err);
     } finally {
       setLoadingTajweed(prev => ({ ...prev, [ayah.number]: false }));
     }
@@ -316,6 +325,9 @@ const AyahReader: React.FC<AyahReaderProps> = ({
             );
           }
 
+          const hasWbw = wbwData[ayah.number] && wbwData[ayah.number].length > 0;
+          const hasTajweed = tajweedData[ayah.number] && tajweedData[ayah.number].length > 0;
+
           return (
             <div 
               key={ayah.number} 
@@ -390,7 +402,7 @@ const AyahReader: React.FC<AyahReaderProps> = ({
 
               {showWordByWord && (
                 <div className="mb-6">
-                  {wbwData[ayah.number] ? (
+                  {hasWbw ? (
                     <div className="flex flex-wrap flex-row-reverse gap-3 bg-slate-50/50 p-4 rounded-2xl border border-slate-100 animate-in fade-in">
                       {wbwData[ayah.number].map((word, idx) => (
                         <div key={idx} className="flex flex-col items-center bg-white p-2.5 rounded-xl border border-slate-100 shadow-sm min-w-[70px] text-center">
@@ -406,7 +418,7 @@ const AyahReader: React.FC<AyahReaderProps> = ({
                       disabled={loadingWbw[ayah.number]}
                       className="w-full py-2 border-2 border-dashed border-emerald-100 rounded-xl text-emerald-600 text-[9px] font-black uppercase tracking-widest hover:bg-emerald-50 transition-all flex items-center justify-center gap-2"
                     >
-                      {loadingWbw[ayah.number] ? <span className="w-3 h-3 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin"></span> : 'Word-By-Word ✨'}
+                      {loadingWbw[ayah.number] ? <span className="w-3 h-3 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin"></span> : 'Load Word-By-Word ✨'}
                     </button>
                   )}
                 </div>
@@ -414,7 +426,7 @@ const AyahReader: React.FC<AyahReaderProps> = ({
 
               {showTajweed && (
                 <div className="mb-6">
-                  {tajweedData[ayah.number] ? (
+                  {hasTajweed ? (
                     <div className="bg-indigo-50/50 rounded-2xl p-4 border border-indigo-100 space-y-3 animate-in fade-in">
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-base">💎</span>
@@ -439,7 +451,7 @@ const AyahReader: React.FC<AyahReaderProps> = ({
                       disabled={loadingTajweed[ayah.number]}
                       className="w-full py-2 bg-indigo-50 text-indigo-700 rounded-xl text-[9px] font-black uppercase tracking-widest border border-indigo-100 hover:bg-indigo-100 transition-all flex items-center justify-center gap-2"
                     >
-                      {loadingTajweed[ayah.number] ? <span className="w-3 h-3 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></span> : 'Tajweed Guide 💎'}
+                      {loadingTajweed[ayah.number] ? <span className="w-3 h-3 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></span> : 'Load Tajweed Guide 💎'}
                     </button>
                   )}
                 </div>
