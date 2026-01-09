@@ -2,6 +2,9 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { Surah, Ayah, Word, TajweedRule, SearchResult } from "../types";
 
+const BISMILLAH_TEXT = "بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ";
+const BISMILLAH_ALT = "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ";
+
 /**
  * Fetches Surah content (Arabic, English, Tamil) from public APIs
  */
@@ -13,13 +16,27 @@ export const fetchSurahData = async (surahId: number): Promise<Surah> => {
 
   const [arabic, english, tamil] = data.data;
 
-  const ayahs: Ayah[] = arabic.ayahs.map((ayah: any, index: number) => ({
-    number: ayah.numberInSurah,
-    text: ayah.text,
-    translation_en: english.ayahs[index].text,
-    translation_ta: tamil.ayahs[index].text,
-    words: []
-  }));
+  const ayahs: Ayah[] = arabic.ayahs.map((ayah: any, index: number) => {
+    let text = ayah.text;
+    
+    // Strip Bismillah from first ayah of Surahs 2-114 (except 9)
+    // We leave it for Surah 1 (Al-Fatihah) as it is technically the first verse
+    if (surahId !== 1 && surahId !== 9 && ayah.numberInSurah === 1) {
+      if (text.startsWith(BISMILLAH_TEXT)) {
+        text = text.replace(BISMILLAH_TEXT, "").trim();
+      } else if (text.startsWith(BISMILLAH_ALT)) {
+        text = text.replace(BISMILLAH_ALT, "").trim();
+      }
+    }
+
+    return {
+      number: ayah.numberInSurah,
+      text: text,
+      translation_en: english.ayahs[index].text,
+      translation_ta: tamil.ayahs[index].text,
+      words: []
+    };
+  });
 
   return {
     id: surahId,
@@ -35,7 +52,6 @@ export const fetchSurahData = async (surahId: number): Promise<Surah> => {
  * Uses Gemini to search for specific content/topics across the Quran
  */
 export const searchQuranContent = async (query: string): Promise<SearchResult[]> => {
-  // Use API key directly from environment variable
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const prompt = `You are an expert Quran search engine. The user is searching for: "${query}".
   Search the entire Quran (all 114 Surahs) for the most relevant verses matching this keyword, phrase, or topic.
@@ -88,7 +104,6 @@ export const searchQuranContent = async (query: string): Promise<SearchResult[]>
  * Uses Gemini to generate word-by-word translation
  */
 export const getWordByWordTranslation = async (ayahText: string): Promise<Word[]> => {
-  // Use API key directly from environment variable
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const prompt = `Break down the following Arabic Ayah into individual words and provide their English and Tamil translations. 
   Format your response as a JSON array of objects with properties: "arabic", "english", "tamil".
@@ -126,7 +141,6 @@ export const getWordByWordTranslation = async (ayahText: string): Promise<Word[]
  * Uses Gemini to provide Tartil and Tajweed rules for a specific Ayah
  */
 export const getAyahTajweedRules = async (ayahText: string): Promise<TajweedRule[]> => {
-  // Use API key directly from environment variable
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const prompt = `Analyze the following Arabic Ayah for Tajweed and Tartil rules. 
   Identify rules like Qalqalah, Ghunnah, Ikhfa, Idgham, Madd, and correct articulation (Makhraj).

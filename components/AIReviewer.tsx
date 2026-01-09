@@ -3,9 +3,14 @@ import React, { useState, useRef, useEffect } from 'react';
 import { verifyRecitation } from '../services/geminiService';
 import { fetchSurahData } from '../services/quranService';
 import { ALL_SURAH_NAMES } from '../data/quranData';
-import { PastReview, Surah, Ayah } from '../types';
+import { PastReview, Surah, Ayah, QuranScript, QuranFontSize } from '../types';
 
-const AIReviewer: React.FC = () => {
+interface AIReviewerProps {
+  script?: QuranScript;
+  fontSize?: QuranFontSize;
+}
+
+const AIReviewer: React.FC<AIReviewerProps> = ({ script = 'uthmani', fontSize = 'md' }) => {
   const [isRecording, setIsRecording] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -21,6 +26,20 @@ const AIReviewer: React.FC = () => {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const historyAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  const arabicClass = script === 'uthmani' ? 'font-uthmani' : 'font-indopak';
+  
+  const getFontSizeClass = () => {
+    switch(fontSize) {
+      case 'sm': return 'text-xl leading-relaxed';
+      case 'md': return 'text-3xl leading-relaxed';
+      case 'lg': return 'text-4xl leading-relaxed';
+      case 'xl': return 'text-5xl leading-relaxed';
+      default: return 'text-3xl leading-relaxed';
+    }
+  };
+
+  const fontSizeClass = getFontSizeClass();
 
   // Load History
   useEffect(() => {
@@ -241,7 +260,7 @@ const AIReviewer: React.FC = () => {
             </div>
           ) : (
             <>
-              <p className="quran-font text-3xl text-slate-800 leading-relaxed mb-4 dir-rtl">{selectedAyah?.text}</p>
+              <p className={`${arabicClass} ${fontSizeClass} text-slate-800 mb-4 dir-rtl`}>{selectedAyah?.text}</p>
               <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest mb-1">Translation</p>
               <p className="text-xs text-slate-500 italic px-4 line-clamp-3">{selectedAyah?.translation_en}</p>
             </>
@@ -277,7 +296,7 @@ const AIReviewer: React.FC = () => {
                       VERSE {ayah.number}
                     </span>
                   </div>
-                  <p className="quran-font text-xl text-right text-slate-800 leading-relaxed dir-rtl">{ayah.text}</p>
+                  <p className={`${arabicClass} text-xl text-right text-slate-800 leading-relaxed dir-rtl`}>{ayah.text}</p>
                 </div>
               ))}
             </div>

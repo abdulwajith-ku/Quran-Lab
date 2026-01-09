@@ -63,6 +63,8 @@ export interface PastReview {
   audioBase64: string;
 }
 
-export type ViewState = 'surah-list' | 'reader' | 'tracker' | 'ai-verify' | 'tajweed-tips';
+export type ViewState = 'surah-list' | 'reader' | 'tracker' | 'ai-verify' | 'tajweed-tips' | 'hifz-master';
 export type ListMode = 'surah' | 'juz';
 export type HifzMethod = 'standard' | 'chain';
+export type QuranScript = 'uthmani' | 'indopak';
+export type QuranFontSize = 'sm' | 'md' | 'lg' | 'xl';

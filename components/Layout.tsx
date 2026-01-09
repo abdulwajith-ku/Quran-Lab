@@ -11,6 +11,7 @@ interface LayoutProps {
 const Layout: React.FC<LayoutProps> = ({ children, activeView, onViewChange }) => {
   const navItems: { id: ViewState; label: string; icon: string }[] = [
     { id: 'surah-list', label: 'Read', icon: '📖' },
+    { id: 'hifz-master', label: 'Practice', icon: '🎯' },
     { id: 'tracker', label: 'Tracker', icon: '📈' },
     { id: 'ai-verify', label: 'AI Review', icon: '🎙️' },
     { id: 'tajweed-tips', label: 'Tajweed', icon: '✨' },

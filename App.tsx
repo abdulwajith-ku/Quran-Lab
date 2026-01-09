@@ -5,7 +5,8 @@ import AyahReader from './components/AyahReader';
 import HifzTracker from './components/HifzTracker';
 import AIReviewer from './components/AIReviewer';
 import TajweedTips from './components/TajweedTips';
-import { ViewState, ListMode, HifzProgress, SearchResult } from './types';
+import HifzMaster from './components/HifzMaster';
+import { ViewState, ListMode, HifzProgress, SearchResult, QuranScript, QuranFontSize } from './types';
 import { ALL_SURAH_NAMES, JUZ_DATA } from './data/quranData';
 import { searchQuranContent } from './services/quranService';
 import { transcribeAudio } from './services/geminiService';
@@ -18,6 +19,16 @@ const App: React.FC = () => {
   const [isSearchingContent, setIsSearchingContent] = useState(false);
   const [selectedSurahId, setSelectedSurahId] = useState<number | null>(null);
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
+  
+  const [quranScript, setQuranScript] = useState<QuranScript>(() => {
+    const saved = localStorage.getItem('quran-script');
+    return (saved as QuranScript) || 'uthmani';
+  });
+
+  const [quranFontSize, setQuranFontSize] = useState<QuranFontSize>(() => {
+    const saved = localStorage.getItem('quran-font-size');
+    return (saved as QuranFontSize) || 'md';
+  });
   
   // Voice Search State
   const [isRecordingSearch, setIsRecordingSearch] = useState(false);
@@ -33,6 +44,14 @@ const App: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('hifz-progress', JSON.stringify(progress));
   }, [progress]);
+
+  useEffect(() => {
+    localStorage.setItem('quran-script', quranScript);
+  }, [quranScript]);
+
+  useEffect(() => {
+    localStorage.setItem('quran-font-size', quranFontSize);
+  }, [quranFontSize]);
 
   // Handle global content search
   const handleDeepSearch = async (queryOverride?: string) => {
@@ -165,7 +184,6 @@ const App: React.FC = () => {
             </div>
           </div>
 
-          {/* Enhanced Search Box with Voice Input */}
           <div className="space-y-3">
             <div className="relative group">
               <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
@@ -213,7 +231,6 @@ const App: React.FC = () => {
             )}
           </div>
 
-          {/* Scrollable Search Content Results Section */}
           { (isSearchingContent || searchResults.length > 0) && (
             <div className="bg-slate-900 rounded-[2.5rem] p-6 border border-slate-800 animate-in slide-in-from-top-4 shadow-2xl overflow-hidden">
               <div className="flex justify-between items-center mb-4">
@@ -249,7 +266,7 @@ const App: React.FC = () => {
                         </div>
                       </div>
                       
-                      <p className="quran-font text-xl text-right text-white leading-relaxed mb-3 dir-rtl">{res.arabicText}</p>
+                      <p className={`${quranScript === 'uthmani' ? 'font-uthmani' : 'font-indopak'} text-xl text-right text-white leading-relaxed mb-3 dir-rtl`}>{res.arabicText}</p>
                       
                       <div className="space-y-2 border-t border-white/5 pt-3">
                         <p className="text-[11px] text-slate-400 leading-relaxed italic"><span className="text-[8px] font-black text-slate-600 uppercase mr-1">EN</span> {res.snippet}</p>
@@ -272,7 +289,6 @@ const App: React.FC = () => {
               Surah-wise
             </button>
             <button
-              // Fix: Correctly set listMode to 'juz' to match types and UI expectation
               onClick={() => setListMode('juz')}
               className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-2xl transition-all ${
                 listMode === 'juz' ? 'bg-white shadow-md text-emerald-700 translate-y-[-1px]' : 'text-slate-500'
@@ -362,6 +378,10 @@ const App: React.FC = () => {
       return (
         <AyahReader 
           surahId={selectedSurahId} 
+          script={quranScript}
+          setScript={setQuranScript}
+          fontSize={quranFontSize}
+          setFontSize={setQuranFontSize}
           onBack={() => {
             setSelectedSurahId(null);
             setActiveView('surah-list');
@@ -376,10 +396,12 @@ const App: React.FC = () => {
     switch (activeView) {
       case 'surah-list':
         return renderSelectionList();
+      case 'hifz-master':
+        return <HifzMaster script={quranScript} fontSize={quranFontSize} setFontSize={setQuranFontSize} />;
       case 'tracker':
         return <HifzTracker progress={progress} />;
       case 'ai-verify':
-        return <AIReviewer />;
+        return <AIReviewer script={quranScript} fontSize={quranFontSize} />;
       case 'tajweed-tips':
         return <TajweedTips />;
       default:
