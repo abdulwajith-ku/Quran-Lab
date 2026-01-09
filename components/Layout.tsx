@@ -22,7 +22,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onViewChange }) =
         <h1 className="text-2xl font-bold text-center flex items-center justify-center gap-2">
           <span>🌙</span> Al-Hifz Companion
         </h1>
-        <p className="text-emerald-100 text-xs text-center mt-1">Memorize the Quran with Tajweed & Tamil translation</p>
+        <p className="text-emerald-100 text-xs text-center mt-1">Memorize The Quran with Tajweed & Translation.</p>
       </header>
 
       <main className="flex-1 p-4 pb-32 overflow-y-auto">

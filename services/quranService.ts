@@ -2,8 +2,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { Surah, Ayah, Word, TajweedRule, SearchResult } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || "" });
-
 /**
  * Fetches Surah content (Arabic, English, Tamil) from public APIs
  */
@@ -37,6 +35,8 @@ export const fetchSurahData = async (surahId: number): Promise<Surah> => {
  * Uses Gemini to search for specific content/topics across the Quran
  */
 export const searchQuranContent = async (query: string): Promise<SearchResult[]> => {
+  // Use API key directly from environment variable
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const prompt = `You are an expert Quran search engine. The user is searching for: "${query}".
   Search the entire Quran (all 114 Surahs) for the most relevant verses matching this keyword, phrase, or topic.
   
@@ -88,6 +88,8 @@ export const searchQuranContent = async (query: string): Promise<SearchResult[]>
  * Uses Gemini to generate word-by-word translation
  */
 export const getWordByWordTranslation = async (ayahText: string): Promise<Word[]> => {
+  // Use API key directly from environment variable
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const prompt = `Break down the following Arabic Ayah into individual words and provide their English and Tamil translations. 
   Format your response as a JSON array of objects with properties: "arabic", "english", "tamil".
   Ayah: "${ayahText}"`;
@@ -124,6 +126,8 @@ export const getWordByWordTranslation = async (ayahText: string): Promise<Word[]
  * Uses Gemini to provide Tartil and Tajweed rules for a specific Ayah
  */
 export const getAyahTajweedRules = async (ayahText: string): Promise<TajweedRule[]> => {
+  // Use API key directly from environment variable
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const prompt = `Analyze the following Arabic Ayah for Tajweed and Tartil rules. 
   Identify rules like Qalqalah, Ghunnah, Ikhfa, Idgham, Madd, and correct articulation (Makhraj).
   Provide a list of rules found. For each rule, include:

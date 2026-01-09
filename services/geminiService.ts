@@ -2,7 +2,8 @@
 import { GoogleGenAI, GenerateContentResponse, Type } from "@google/genai";
 
 const getAIClient = () => {
-  return new GoogleGenAI({ apiKey: process.env.API_KEY || "" });
+  // Use the API key directly from environment variable as per guidelines
+  return new GoogleGenAI({ apiKey: process.env.API_KEY });
 };
 
 export const verifyRecitation = async (

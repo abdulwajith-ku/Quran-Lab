@@ -64,5 +64,5 @@ export interface PastReview {
 }
 
 export type ViewState = 'surah-list' | 'reader' | 'tracker' | 'ai-verify' | 'tajweed-tips';
-export type ListMode = 'surah';
+export type ListMode = 'surah' | 'juz';
 export type HifzMethod = 'standard' | 'chain';

@@ -272,7 +272,8 @@ const App: React.FC = () => {
               Surah-wise
             </button>
             <button
-              onClick={() => setListMode('surah')} // Juz logic can be re-enabled if data mapping is finished
+              // Fix: Correctly set listMode to 'juz' to match types and UI expectation
+              onClick={() => setListMode('juz')}
               className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-2xl transition-all ${
                 listMode === 'juz' ? 'bg-white shadow-md text-emerald-700 translate-y-[-1px]' : 'text-slate-500'
               }`}
