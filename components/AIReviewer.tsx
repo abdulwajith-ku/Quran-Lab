@@ -3,11 +3,13 @@ import React, { useState, useRef, useEffect } from 'react';
 import { verifyRecitation } from '../services/geminiService';
 import { fetchSurahData } from '../services/quranService';
 import { ALL_SURAH_NAMES } from '../data/quranData';
-import { PastReview, Surah, Ayah, QuranScript, QuranFontSize } from '../types';
+// Fix: Use correct type name 'FontSize' as exported in types.ts
+import { PastReview, Surah, Ayah, QuranScript, FontSize } from '../types';
 
 interface AIReviewerProps {
   script?: QuranScript;
-  fontSize?: QuranFontSize;
+  // Fix: Use correct type name 'FontSize'
+  fontSize?: FontSize;
 }
 
 const AIReviewer: React.FC<AIReviewerProps> = ({ script = 'uthmani', fontSize = 'md' }) => {

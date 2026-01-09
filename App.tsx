@@ -6,7 +6,7 @@ import HifzTracker from './components/HifzTracker';
 import AIReviewer from './components/AIReviewer';
 import TajweedTips from './components/TajweedTips';
 import HifzMaster from './components/HifzMaster';
-import { ViewState, ListMode, HifzProgress, SearchResult, QuranScript, QuranFontSize } from './types';
+import { ViewState, ListMode, HifzProgress, SearchResult, QuranScript, FontSize } from './types';
 import { ALL_SURAH_NAMES, JUZ_DATA } from './data/quranData';
 import { searchQuranContent } from './services/quranService';
 import { transcribeAudio } from './services/geminiService';
@@ -25,9 +25,19 @@ const App: React.FC = () => {
     return (saved as QuranScript) || 'uthmani';
   });
 
-  const [quranFontSize, setQuranFontSize] = useState<QuranFontSize>(() => {
-    const saved = localStorage.getItem('quran-font-size');
-    return (saved as QuranFontSize) || 'md';
+  const [arabicFontSize, setArabicFontSize] = useState<FontSize>(() => {
+    const saved = localStorage.getItem('arabic-font-size');
+    return (saved as FontSize) || 'md';
+  });
+
+  const [englishFontSize, setEnglishFontSize] = useState<FontSize>(() => {
+    const saved = localStorage.getItem('english-font-size');
+    return (saved as FontSize) || 'md';
+  });
+
+  const [tamilFontSize, setTamilFontSize] = useState<FontSize>(() => {
+    const saved = localStorage.getItem('tamil-font-size');
+    return (saved as FontSize) || 'md';
   });
   
   // Voice Search State
@@ -50,8 +60,10 @@ const App: React.FC = () => {
   }, [quranScript]);
 
   useEffect(() => {
-    localStorage.setItem('quran-font-size', quranFontSize);
-  }, [quranFontSize]);
+    localStorage.setItem('arabic-font-size', arabicFontSize);
+    localStorage.setItem('english-font-size', englishFontSize);
+    localStorage.setItem('tamil-font-size', tamilFontSize);
+  }, [arabicFontSize, englishFontSize, tamilFontSize]);
 
   // Handle global content search
   const handleDeepSearch = async (queryOverride?: string) => {
@@ -380,8 +392,12 @@ const App: React.FC = () => {
           surahId={selectedSurahId} 
           script={quranScript}
           setScript={setQuranScript}
-          fontSize={quranFontSize}
-          setFontSize={setQuranFontSize}
+          arabicFontSize={arabicFontSize}
+          setArabicFontSize={setArabicFontSize}
+          englishFontSize={englishFontSize}
+          setEnglishFontSize={setEnglishFontSize}
+          tamilFontSize={tamilFontSize}
+          setTamilFontSize={setTamilFontSize}
           onBack={() => {
             setSelectedSurahId(null);
             setActiveView('surah-list');
@@ -397,11 +413,11 @@ const App: React.FC = () => {
       case 'surah-list':
         return renderSelectionList();
       case 'hifz-master':
-        return <HifzMaster script={quranScript} fontSize={quranFontSize} setFontSize={setQuranFontSize} />;
+        return <HifzMaster script={quranScript} fontSize={arabicFontSize} setFontSize={setArabicFontSize} />;
       case 'tracker':
         return <HifzTracker progress={progress} />;
       case 'ai-verify':
-        return <AIReviewer script={quranScript} fontSize={quranFontSize} />;
+        return <AIReviewer script={quranScript} fontSize={arabicFontSize} />;
       case 'tajweed-tips':
         return <TajweedTips />;
       default:

@@ -1,13 +1,15 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Surah, Ayah, HifzMethod, QuranScript, QuranFontSize } from '../types';
+// Fix: Use correct type name 'FontSize' as exported in types.ts
+import { Surah, Ayah, HifzMethod, QuranScript, FontSize } from '../types';
 import { fetchSurahData } from '../services/quranService';
 import { ALL_SURAH_NAMES } from '../data/quranData';
 
 interface HifzMasterProps {
   script: QuranScript;
-  fontSize: QuranFontSize;
-  setFontSize: (s: QuranFontSize) => void;
+  // Fix: Use correct type name 'FontSize'
+  fontSize: FontSize;
+  setFontSize: (s: FontSize) => void;
 }
 
 type HifzPhase = 'focus' | 'chain';
@@ -261,7 +263,8 @@ const HifzMaster: React.FC<HifzMasterProps> = ({ script, fontSize, setFontSize }
               </div>
 
               <div className="bg-white/5 p-1 rounded-2xl flex gap-1 border border-white/5">
-                {(['sm', 'md', 'lg', 'xl'] as QuranFontSize[]).map(size => (
+                {/* Fix: Use correct type name 'FontSize' */}
+                {(['sm', 'md', 'lg', 'xl'] as FontSize[]).map(size => (
                   <button 
                       key={size}
                       onClick={() => setFontSize(size)}

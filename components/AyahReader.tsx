@@ -1,14 +1,18 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Surah, Ayah, Word, TajweedRule, QuranScript, QuranFontSize } from '../types';
+import { Surah, Ayah, Word, TajweedRule, QuranScript, FontSize } from '../types';
 import { fetchSurahData, getWordByWordTranslation, getAyahTajweedRules } from '../services/quranService';
 
 interface AyahReaderProps {
   surahId: number;
   script: QuranScript;
   setScript: (s: QuranScript) => void;
-  fontSize: QuranFontSize;
-  setFontSize: (s: QuranFontSize) => void;
+  arabicFontSize: FontSize;
+  setArabicFontSize: (s: FontSize) => void;
+  englishFontSize: FontSize;
+  setEnglishFontSize: (s: FontSize) => void;
+  tamilFontSize: FontSize;
+  setTamilFontSize: (s: FontSize) => void;
   onBack: () => void;
   isAyahMemorized: (surahId: number, ayahNum: number) => boolean;
   isAyahRecited: (surahId: number, ayahNum: number) => boolean;
@@ -17,7 +21,13 @@ interface AyahReaderProps {
 
 const BISMILLAH_TEXT = "بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ";
 
-const AyahReader: React.FC<AyahReaderProps> = ({ surahId, script, setScript, fontSize, setFontSize, onBack, isAyahMemorized, isAyahRecited, toggleStatus }) => {
+const AyahReader: React.FC<AyahReaderProps> = ({ 
+  surahId, script, setScript, 
+  arabicFontSize, setArabicFontSize, 
+  englishFontSize, setEnglishFontSize, 
+  tamilFontSize, setTamilFontSize,
+  onBack, isAyahMemorized, isAyahRecited, toggleStatus 
+}) => {
   const [surah, setSurah] = useState<Surah | null>(null);
   const [loading, setLoading] = useState(true);
   const [showWordByWord, setShowWordByWord] = useState(true);
@@ -88,23 +98,43 @@ const AyahReader: React.FC<AyahReaderProps> = ({ surahId, script, setScript, fon
     audio.onended = () => setPlayingAyah(null);
   };
 
-  const getFontSizeClass = (isMushaf: boolean) => {
+  const getArabicFontSizeClass = (isMushaf: boolean) => {
     if (isMushaf) {
-        switch(fontSize) {
-            case 'sm': return 'text-3xl leading-[4rem]';
-            case 'md': return 'text-5xl leading-[5rem]';
-            case 'lg': return 'text-6xl leading-[6rem]';
-            case 'xl': return 'text-7xl leading-[7rem]';
-            default: return 'text-5xl leading-[5rem]';
+        switch(arabicFontSize) {
+            case 'sm': return 'text-3xl leading-[4.5rem]';
+            case 'md': return 'text-5xl leading-[6rem]';
+            case 'lg': return 'text-6xl leading-[7rem]';
+            case 'xl': return 'text-7xl leading-[8.5rem]';
+            default: return 'text-5xl leading-[6rem]';
         }
     } else {
-        switch(fontSize) {
-            case 'sm': return 'text-2xl leading-[3.5rem]';
-            case 'md': return 'text-4xl leading-[4.5rem]';
-            case 'lg': return 'text-5xl leading-[5.5rem]';
-            case 'xl': return 'text-6xl leading-[6.5rem]';
-            default: return 'text-4xl leading-[4.5rem]';
+        switch(arabicFontSize) {
+            case 'sm': return 'text-2xl leading-[4rem]';
+            case 'md': return 'text-4xl leading-[5rem]';
+            case 'lg': return 'text-5xl leading-[6rem]';
+            case 'xl': return 'text-6xl leading-[7.5rem]';
+            default: return 'text-4xl leading-[5rem]';
         }
+    }
+  };
+
+  const getEnglishFontSizeClass = () => {
+    switch(englishFontSize) {
+      case 'sm': return 'text-[11px]';
+      case 'md': return 'text-sm';
+      case 'lg': return 'text-base';
+      case 'xl': return 'text-lg';
+      default: return 'text-sm';
+    }
+  };
+
+  const getTamilFontSizeClass = () => {
+    switch(tamilFontSize) {
+      case 'sm': return 'text-[11px]';
+      case 'md': return 'text-sm';
+      case 'lg': return 'text-base';
+      case 'xl': return 'text-lg';
+      default: return 'text-sm';
     }
   };
 
@@ -133,73 +163,117 @@ const AyahReader: React.FC<AyahReaderProps> = ({ surahId, script, setScript, fon
         </div>
       </div>
 
-      <div className="mb-6 flex flex-wrap gap-2 pb-2 scrollbar-hide items-center">
-        <button 
-          onClick={() => setIsMushafMode(!isMushafMode)}
-          className={`px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all whitespace-nowrap ${
-            isMushafMode ? 'bg-slate-800 border-slate-700 text-white shadow-sm' : 'bg-white border-slate-200 text-slate-500'
-          }`}
-        >
-          {isMushafMode ? 'Standard View' : 'Mushaf Mode'}
-        </button>
-
-        <div className="bg-slate-100 p-1 rounded-full flex gap-1 border border-slate-200">
-           <button 
-            onClick={() => setScript('uthmani')}
-            className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${
-              script === 'uthmani' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-500'
-            }`}
-          >
-            Uthmani
-          </button>
+      <div className="mb-6 space-y-3">
+        <div className="flex flex-wrap gap-2 items-center">
           <button 
-            onClick={() => setScript('indopak')}
-            className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${
-              script === 'indopak' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-500'
-            }`}
-          >
-            Indo-Pak
-          </button>
-        </div>
-
-        <div className="bg-slate-100 p-1 rounded-full flex gap-1 border border-slate-200">
-           {(['sm', 'md', 'lg', 'xl'] as QuranFontSize[]).map(size => (
-             <button 
-                key={size}
-                onClick={() => setFontSize(size)}
-                className={`px-3 py-1.5 rounded-full text-[9px] font-black uppercase transition-all ${
-                  fontSize === size ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-500'
-                }`}
-              >
-                {size}
-              </button>
-           ))}
-        </div>
-
-        {!isMushafMode && (
-          <button 
-            onClick={() => setShowWordByWord(!showWordByWord)}
+            onClick={() => setIsMushafMode(!isMushafMode)}
             className={`px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all whitespace-nowrap ${
-              showWordByWord ? 'bg-emerald-100 border-emerald-300 text-emerald-800 shadow-sm' : 'bg-white border-slate-200 text-slate-500'
+              isMushafMode ? 'bg-slate-800 border-slate-700 text-white shadow-sm' : 'bg-white border-slate-200 text-slate-500'
             }`}
           >
-            {showWordByWord ? 'Word-By-Word ON' : 'Word-By-Word OFF'}
+            {isMushafMode ? 'Standard View' : 'Mushaf Mode'}
           </button>
-        )}
+
+          <div className="bg-slate-100 p-1 rounded-full flex gap-1 border border-slate-200">
+             <button 
+              onClick={() => setScript('uthmani')}
+              className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${
+                script === 'uthmani' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-500'
+              }`}
+            >
+              Uthmani
+            </button>
+            <button 
+              onClick={() => setScript('indopak')}
+              className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${
+                script === 'indopak' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-500'
+              }`}
+            >
+              Indo-Pak
+            </button>
+          </div>
+
+          {!isMushafMode && (
+            <button 
+              onClick={() => setShowWordByWord(!showWordByWord)}
+              className={`px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all whitespace-nowrap ${
+                showWordByWord ? 'bg-emerald-100 border-emerald-300 text-emerald-800 shadow-sm' : 'bg-white border-slate-200 text-slate-500'
+              }`}
+            >
+              {showWordByWord ? 'WBW ON' : 'WBW OFF'}
+            </button>
+          )}
+        </div>
+
+        {/* Individual Font Controls */}
+        <div className="bg-white/50 border border-slate-100 p-4 rounded-[2rem] shadow-sm space-y-3">
+          <div className="flex items-center justify-between gap-4">
+            <span className="text-[9px] font-black text-emerald-700 uppercase tracking-widest w-6">AR</span>
+            <div className="flex-1 bg-emerald-50 p-1 rounded-full flex gap-1">
+              {(['sm', 'md', 'lg', 'xl'] as FontSize[]).map(size => (
+                <button 
+                    key={size}
+                    onClick={() => setArabicFontSize(size)}
+                    className={`flex-1 py-1.5 rounded-full text-[9px] font-black uppercase transition-all ${
+                      arabicFontSize === size ? 'bg-emerald-600 text-white shadow-sm' : 'text-emerald-400'
+                    }`}
+                  >
+                    {size}
+                  </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between gap-4">
+            <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest w-6">EN</span>
+            <div className="flex-1 bg-slate-100 p-1 rounded-full flex gap-1">
+              {(['sm', 'md', 'lg', 'xl'] as FontSize[]).map(size => (
+                <button 
+                    key={size}
+                    onClick={() => setEnglishFontSize(size)}
+                    className={`flex-1 py-1.5 rounded-full text-[9px] font-black uppercase transition-all ${
+                      englishFontSize === size ? 'bg-slate-600 text-white shadow-sm' : 'text-slate-400'
+                    }`}
+                  >
+                    {size}
+                  </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between gap-4">
+            <span className="text-[9px] font-black text-indigo-700 uppercase tracking-widest w-6">TA</span>
+            <div className="flex-1 bg-indigo-50 p-1 rounded-full flex gap-1">
+              {(['sm', 'md', 'lg', 'xl'] as FontSize[]).map(size => (
+                <button 
+                    key={size}
+                    onClick={() => setTamilFontSize(size)}
+                    className={`flex-1 py-1.5 rounded-full text-[9px] font-black uppercase transition-all ${
+                      tamilFontSize === size ? 'bg-indigo-600 text-white shadow-sm' : 'text-indigo-400'
+                    }`}
+                  >
+                    {size}
+                  </button>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className={`${isMushafMode ? 'bg-white border border-slate-100 rounded-[3rem] p-10 shadow-lg space-y-8' : 'space-y-12'}`}>
         {surah.ayahs.map((ayah) => {
           const showBismillahHeader = ayah.number === 1 && surah.id !== 1 && surah.id !== 9;
           const arabicClass = script === 'uthmani' ? 'font-uthmani' : 'font-indopak';
-          const fontSizeClass = getFontSizeClass(isMushafMode);
+          const arabicSizeClass = getArabicFontSizeClass(isMushafMode);
+          const englishSizeClass = getEnglishFontSizeClass();
+          const tamilSizeClass = getTamilFontSizeClass();
 
           if (isMushafMode) {
             return (
               <div key={ayah.number} className="animate-in fade-in duration-700">
                 {showBismillahHeader && (
                   <div className="text-center mb-10">
-                    <div className={`${arabicClass} ${fontSizeClass} text-slate-800 tracking-widest leading-relaxed`}>
+                    <div className={`${arabicClass} ${arabicSizeClass} text-slate-800 tracking-widest leading-relaxed`}>
                       {BISMILLAH_TEXT}
                     </div>
                     <div className="h-0.5 w-32 bg-slate-100 mx-auto mt-6 rounded-full"></div>
@@ -212,7 +286,7 @@ const AyahReader: React.FC<AyahReaderProps> = ({ surahId, script, setScript, fon
                     playingAyah === ayah.number ? 'bg-emerald-50/50 -mx-4 px-4 py-2 rounded-2xl' : ''
                   }`}
                 >
-                  <div className={`${arabicClass} ${fontSizeClass} text-right text-slate-800 dir-rtl selection:bg-emerald-200 tracking-wide font-medium`}>
+                  <div className={`${arabicClass} ${arabicSizeClass} text-right text-slate-800 dir-rtl selection:bg-emerald-200 tracking-wide font-medium`}>
                     {ayah.text}
                     <span className="inline-flex items-center justify-center w-12 h-12 bg-slate-50 border border-slate-200 rounded-full text-[14px] font-black font-sans mx-4 align-middle text-emerald-800 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
                       {ayah.number}
@@ -238,7 +312,7 @@ const AyahReader: React.FC<AyahReaderProps> = ({ surahId, script, setScript, fon
             >
               {showBismillahHeader && (
                 <div className="text-center mb-8 animate-in fade-in duration-1000">
-                  <div className={`${arabicClass} ${fontSizeClass} text-slate-800 tracking-widest leading-relaxed`}>
+                  <div className={`${arabicClass} ${arabicSizeClass} text-slate-800 tracking-widest leading-relaxed`}>
                     {BISMILLAH_TEXT}
                   </div>
                   <div className="h-0.5 w-24 bg-emerald-100 mx-auto mt-4 rounded-full"></div>
@@ -284,7 +358,7 @@ const AyahReader: React.FC<AyahReaderProps> = ({ surahId, script, setScript, fon
                 </div>
               </div>
 
-              <div className={`${arabicClass} ${fontSizeClass} text-right mb-10 text-slate-800 dir-rtl selection:bg-emerald-200 tracking-wide`}>
+              <div className={`${arabicClass} ${arabicSizeClass} text-right mb-10 text-slate-800 dir-rtl selection:bg-emerald-200 tracking-wide`}>
                 {ayah.text}
               </div>
 
@@ -295,17 +369,17 @@ const AyahReader: React.FC<AyahReaderProps> = ({ surahId, script, setScript, fon
                       {wbwData[ayah.number].map((word, idx) => (
                         <div key={idx} className="flex flex-col items-center bg-white p-3.5 rounded-2xl border border-slate-100 shadow-sm min-w-[85px] hover:border-emerald-200 transition-colors cursor-default group text-center">
                           <span className={`${arabicClass} text-xl text-emerald-900 mb-2 group-hover:scale-110 transition-transform`}>{word.arabic}</span>
-                          <span className="text-[10px] text-slate-400 font-black uppercase tracking-tighter mb-1 leading-none">{word.english}</span>
-                          <span className="text-[10px] text-emerald-600 font-bold tamil-font italic leading-none">{word.tamil}</span>
+                          <span className={`${englishSizeClass} text-slate-400 font-black uppercase tracking-tighter mb-1 leading-none`}>{word.english}</span>
+                          <span className={`${tamilSizeClass} text-emerald-600 font-bold tamil-font italic leading-none`}>{word.tamil}</span>
                         </div>
                       ))}
                     </div>
                   ) : (
                     <button 
                       onClick={() => loadWbw(ayah)}
-                      className="w-full py-6 border-2 border-dashed border-emerald-100 rounded-[2.5rem] text-emerald-600 text-[10px] font-black uppercase tracking-[0.2em] hover:bg-emerald-50 hover:border-emerald-300 transition-all flex items-center justify-center gap-3"
+                      className="w-full py-3 border-2 border-dashed border-emerald-100 rounded-[2rem] text-emerald-600 text-[10px] font-black uppercase tracking-widest hover:bg-emerald-50 hover:border-emerald-300 transition-all flex items-center justify-center gap-2"
                     >
-                      <span>✨</span> Generate Tamil Word-By-Word
+                      <span>✨</span> Word-By-Word
                     </button>
                   )}
                 </div>
@@ -325,8 +399,8 @@ const AyahReader: React.FC<AyahReaderProps> = ({ surahId, script, setScript, fon
                             <span className="px-3 py-1 bg-indigo-600 text-white text-[9px] font-black rounded-lg uppercase tracking-wider">{rule.rule}</span>
                             <span className={`${arabicClass} text-sm text-indigo-900 font-bold`}>{rule.location}</span>
                           </div>
-                          <p className="text-xs text-slate-600 leading-relaxed mb-1 font-medium">{rule.explanation_en}</p>
-                          <p className="text-xs text-indigo-700 tamil-font leading-relaxed italic">{rule.explanation_ta}</p>
+                          <p className={`${englishSizeClass} text-slate-600 leading-relaxed mb-1 font-medium`}>{rule.explanation_en}</p>
+                          <p className={`${tamilSizeClass} text-indigo-700 tamil-font leading-relaxed italic`}>{rule.explanation_ta}</p>
                         </div>
                       ))}
                     </div>
@@ -335,12 +409,12 @@ const AyahReader: React.FC<AyahReaderProps> = ({ surahId, script, setScript, fon
                   <button 
                     onClick={() => loadTajweed(ayah)}
                     disabled={loadingTajweed[ayah.number]}
-                    className="w-full py-5 bg-indigo-50 text-indigo-700 rounded-[2.5rem] text-[10px] font-black uppercase tracking-[0.2em] border border-indigo-100 hover:bg-indigo-100 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+                    className="w-full py-3 bg-indigo-50 text-indigo-700 rounded-[2rem] text-[10px] font-black uppercase tracking-widest border border-indigo-100 hover:bg-indigo-100 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                   >
                     {loadingTajweed[ayah.number] ? (
                       <span className="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></span>
                     ) : (
-                      <><span>💎</span> View Tajweed & Tartil Guide</>
+                      <><span>💎</span> Tajweed & Tartil</>
                     )}
                   </button>
                 )}
@@ -349,11 +423,11 @@ const AyahReader: React.FC<AyahReaderProps> = ({ surahId, script, setScript, fon
               <div className="space-y-6 pt-8 border-t border-slate-100">
                 <div className="flex gap-4">
                   <span className="text-[10px] font-black text-slate-300 uppercase mt-1.5 w-6 shrink-0">EN</span>
-                  <p className="text-sm text-slate-600 leading-relaxed font-medium italic">{ayah.translation_en}</p>
+                  <p className={`${englishSizeClass} text-slate-600 leading-relaxed font-medium italic`}>{ayah.translation_en}</p>
                 </div>
                 <div className="flex gap-4">
                   <span className="text-[10px] font-black text-emerald-200 uppercase mt-1.5 w-6 shrink-0">TA</span>
-                  <p className="text-sm text-slate-500 tamil-font leading-relaxed font-medium">{ayah.translation_ta}</p>
+                  <p className={`${tamilSizeClass} text-sm text-slate-500 tamil-font leading-relaxed font-medium`}>{ayah.translation_ta}</p>
                 </div>
               </div>
             </div>

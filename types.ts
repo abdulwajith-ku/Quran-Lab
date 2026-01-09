@@ -67,4 +67,4 @@ export type ViewState = 'surah-list' | 'reader' | 'tracker' | 'ai-verify' | 'taj
 export type ListMode = 'surah' | 'juz';
 export type HifzMethod = 'standard' | 'chain';
 export type QuranScript = 'uthmani' | 'indopak';
-export type QuranFontSize = 'sm' | 'md' | 'lg' | 'xl';
+export type FontSize = 'sm' | 'md' | 'lg' | 'xl';
