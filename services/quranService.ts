@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { Surah, Ayah, Word, TajweedRule } from "../types";
+import { Surah, Ayah, Word, TajweedRule, SearchResult } from "../types";
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || "" });
 
@@ -31,6 +31,54 @@ export const fetchSurahData = async (surahId: number): Promise<Surah> => {
     total_ayahs: arabic.numberOfAyahs,
     ayahs: ayahs
   };
+};
+
+/**
+ * Uses Gemini to search for specific content/topics across the Quran
+ */
+export const searchQuranContent = async (query: string): Promise<SearchResult[]> => {
+  const prompt = `You are a Quran search expert. The user is searching for: "${query}". 
+  Search the Quran (all 114 Surahs) for verses related to this query. 
+  The query could be a keyword (e.g., "patience"), a topic (e.g., "fasting"), or a specific phrase in English, Tamil, or Arabic.
+  
+  Provide a list of the top 5 most relevant verses. 
+  For each result, include:
+  1. surahId (1-114)
+  2. surahName (English name)
+  3. ayahNumber (the number of the verse in that surah)
+  4. snippet (a short part of the English or Tamil translation)
+  5. relevance (why this verse matches)
+  
+  Format as a JSON array.`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              surahId: { type: Type.NUMBER },
+              surahName: { type: Type.STRING },
+              ayahNumber: { type: Type.NUMBER },
+              snippet: { type: Type.STRING },
+              relevance: { type: Type.STRING }
+            },
+            required: ["surahId", "surahName", "ayahNumber", "snippet", "relevance"]
+          }
+        }
+      }
+    });
+
+    return JSON.parse(response.text || "[]");
+  } catch (error) {
+    console.error("Quran Search Error:", error);
+    return [];
+  }
 };
 
 /**

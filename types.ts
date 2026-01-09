@@ -30,6 +30,14 @@ export interface Surah {
   ayahs: Ayah[];
 }
 
+export interface SearchResult {
+  surahId: number;
+  surahName: string;
+  ayahNumber: number;
+  snippet: string;
+  relevance: string;
+}
+
 export interface JuzInfo {
   id: number;
   startSurah: number;
