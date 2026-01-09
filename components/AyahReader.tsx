@@ -39,17 +39,16 @@ const AyahReader: React.FC<AyahReaderProps> = ({
   const [tajweedData, setTajweedData] = useState<Record<number, TajweedRule[]>>({});
   const [loadingTajweed, setLoadingTajweed] = useState<Record<number, boolean>>({});
   const [loadingWbw, setLoadingWbw] = useState<Record<number, boolean>>({});
+  const [copyStatus, setCopyStatus] = useState<number | null>(null);
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Initial Surah Load
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
       try {
         const data = await fetchSurahData(surahId);
         setSurah(data);
-        // Pre-fetch first 5 Ayahs immediately for "instant" feel
         data.ayahs.slice(0, 5).forEach(ayah => {
           preFetchAyahDetails(ayah);
         });
@@ -114,11 +113,27 @@ const AyahReader: React.FC<AyahReaderProps> = ({
     audio.onended = () => setPlayingAyah(null);
   };
 
-  useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.playbackRate = playbackSpeed;
+  const handleCopy = (ayah: Ayah) => {
+    const text = `${surah?.name} (${surahId}:${ayah.number})\n\n${ayah.text}\n\nEN: ${ayah.translation_en}\n\nTA: ${ayah.translation_ta}\n\nShared via Al-Hifz Companion`;
+    navigator.clipboard.writeText(text).then(() => {
+      setCopyStatus(ayah.number);
+      setTimeout(() => setCopyStatus(null), 2000);
+    });
+  };
+
+  const handleShare = (ayah: Ayah) => {
+    const shareData = {
+      title: `${surah?.name} - Ayah ${ayah.number}`,
+      text: `${ayah.text}\n\nEN: ${ayah.translation_en}\n\nTA: ${ayah.translation_ta}\n\n(${surah?.name} ${surahId}:${ayah.number})`,
+      url: window.location.href,
+    };
+
+    if (navigator.share) {
+      navigator.share(shareData).catch((err) => console.log('Error sharing', err));
+    } else {
+      handleCopy(ayah);
     }
-  }, [playbackSpeed]);
+  };
 
   const getArabicFontSizeClass = (isMushaf: boolean) => {
     if (isMushaf) {
@@ -186,7 +201,6 @@ const AyahReader: React.FC<AyahReaderProps> = ({
       </div>
 
       <div className="mb-6 space-y-3">
-        {/* Toggle Controls bar */}
         <div className="flex flex-wrap gap-2 items-center justify-between bg-slate-50 p-2 rounded-2xl border border-slate-100">
           <div className="flex gap-1.5 items-center">
             <button 
@@ -231,28 +245,9 @@ const AyahReader: React.FC<AyahReaderProps> = ({
               <option value="1.5">1.5x</option>
               <option value="2">2.0x</option>
             </select>
-            <div className="bg-white p-1 rounded-xl flex gap-1 border border-slate-200">
-               <button 
-                onClick={() => setScript('uthmani')}
-                className={`px-3 py-1 rounded-lg text-[8px] font-black uppercase transition-all ${
-                  script === 'uthmani' ? 'bg-emerald-50 text-emerald-700' : 'text-slate-400'
-                }`}
-              >
-                Uth
-              </button>
-              <button 
-                onClick={() => setScript('indopak')}
-                className={`px-3 py-1 rounded-lg text-[8px] font-black uppercase transition-all ${
-                  script === 'indopak' ? 'bg-emerald-50 text-emerald-700' : 'text-slate-400'
-                }`}
-              >
-                Pak
-              </button>
-            </div>
           </div>
         </div>
 
-        {/* Font Controls - Condensed */}
         <div className="bg-white border border-slate-100 p-3 rounded-2xl shadow-sm space-y-2">
           {[
             { label: 'AR', color: 'emerald', val: arabicFontSize, setter: setArabicFontSize },
@@ -311,7 +306,8 @@ const AyahReader: React.FC<AyahReaderProps> = ({
                       {ayah.number}
                     </span>
                   </div>
-                  <div className="flex justify-end gap-1.5 mt-1.5">
+                  <div className="flex justify-end gap-1.5 mt-1.5 items-center">
+                    <button onClick={(e) => { e.stopPropagation(); handleShare(ayah); }} className="text-[10px] opacity-20 hover:opacity-100 p-1">🔗</button>
                     {isAyahMemorized(surah.id, ayah.number) && <span className="w-1 h-1 rounded-full bg-emerald-500"></span>}
                     {isAyahRecited(surah.id, ayah.number) && <span className="w-1 h-1 rounded-full bg-blue-500"></span>}
                   </div>
@@ -349,6 +345,18 @@ const AyahReader: React.FC<AyahReaderProps> = ({
                     }`}
                   >
                     <span className="text-sm">{playingAyah === ayah.number ? '⏸' : '▶'}</span>
+                  </button>
+                  <button 
+                    onClick={() => handleCopy(ayah)}
+                    className="p-2 rounded-xl bg-slate-50 text-slate-400 hover:text-emerald-600 transition-colors text-[10px]"
+                  >
+                    {copyStatus === ayah.number ? '✅' : '📋'}
+                  </button>
+                  <button 
+                    onClick={() => handleShare(ayah)}
+                    className="p-2 rounded-xl bg-slate-50 text-slate-400 hover:text-indigo-600 transition-colors text-[10px]"
+                  >
+                    🔗
                   </button>
                 </div>
                 
