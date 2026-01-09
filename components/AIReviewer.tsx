@@ -1,23 +1,28 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { verifyRecitation } from '../services/geminiService';
-import { QURAN_DATA } from '../data/quranData';
-import { PastReview } from '../types';
+import { fetchSurahData } from '../services/quranService';
+import { ALL_SURAH_NAMES } from '../data/quranData';
+import { PastReview, Surah, Ayah } from '../types';
 
 const AIReviewer: React.FC = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [selectedSurah, setSelectedSurah] = useState(QURAN_DATA[0]);
+  const [selectedSurahId, setSelectedSurahId] = useState(1);
+  const [currentSurah, setCurrentSurah] = useState<Surah | null>(null);
   const [selectedAyahNum, setSelectedAyahNum] = useState(1);
   const [showHistory, setShowHistory] = useState(false);
+  const [showFullSurah, setShowFullSurah] = useState(false);
   const [history, setHistory] = useState<PastReview[]>([]);
   const [playingHistoryId, setPlayingHistoryId] = useState<string | null>(null);
+  const [loadingSurah, setLoadingSurah] = useState(false);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const historyAudioRef = useRef<HTMLAudioElement | null>(null);
 
+  // Load History
   useEffect(() => {
     const saved = localStorage.getItem('hifz-reviews');
     if (saved) {
@@ -25,8 +30,28 @@ const AIReviewer: React.FC = () => {
     }
   }, []);
 
+  // Fetch full Surah data when ID changes
+  useEffect(() => {
+    const loadSurah = async () => {
+      setLoadingSurah(true);
+      try {
+        const data = await fetchSurahData(selectedSurahId);
+        setCurrentSurah(data);
+        // Reset Ayah num if current is out of bounds
+        if (selectedAyahNum > data.total_ayahs) {
+          setSelectedAyahNum(1);
+        }
+      } catch (err) {
+        console.error("Failed to load surah", err);
+      } finally {
+        setLoadingSurah(false);
+      }
+    };
+    loadSurah();
+  }, [selectedSurahId]);
+
   const saveToHistory = (newReview: PastReview) => {
-    const updatedHistory = [newReview, ...history].slice(0, 10); // Keep last 10 to manage storage
+    const updatedHistory = [newReview, ...history].slice(0, 10);
     setHistory(updatedHistory);
     localStorage.setItem('hifz-reviews', JSON.stringify(updatedHistory));
   };
@@ -50,18 +75,17 @@ const AIReviewer: React.FC = () => {
           const base64Audio = (reader.result as string).split(',')[1];
           setIsAnalyzing(true);
           try {
-            const ayah = selectedSurah.ayahs.find(a => a.number === selectedAyahNum);
+            const ayah = currentSurah?.ayahs.find(a => a.number === selectedAyahNum);
             const result = await verifyRecitation(
               base64Audio, 
               ayah?.text || "", 
-              selectedSurah.name
+              currentSurah?.name || ""
             );
             setFeedback(result);
             
-            // Save to history
             const newReview: PastReview = {
               id: Date.now().toString(),
-              surahName: selectedSurah.name,
+              surahName: currentSurah?.name || "Unknown",
               ayahNum: selectedAyahNum,
               feedback: result,
               timestamp: Date.now(),
@@ -105,7 +129,7 @@ const AIReviewer: React.FC = () => {
     audio.onended = () => setPlayingHistoryId(null);
   };
 
-  const selectedAyah = selectedSurah.ayahs.find(a => a.number === selectedAyahNum);
+  const selectedAyah = currentSurah?.ayahs.find(a => a.number === selectedAyahNum);
 
   if (showHistory) {
     return (
@@ -157,9 +181,6 @@ const AIReviewer: React.FC = () => {
                 </button>
               </div>
             ))}
-            <p className="text-[10px] text-center text-slate-400 uppercase tracking-widest py-4">
-              Showing last 10 reviews
-            </p>
           </div>
         )}
       </div>
@@ -171,13 +192,13 @@ const AIReviewer: React.FC = () => {
       <div className="bg-emerald-50 p-6 rounded-3xl border border-emerald-100 flex justify-between items-center">
         <div>
           <h2 className="text-xl font-bold text-emerald-900 mb-1">AI Recitation Review</h2>
-          <p className="text-xs text-emerald-700">Get instant Tajweed feedback.</p>
+          <p className="text-xs text-emerald-700">Practice with full Surah context.</p>
         </div>
         <button 
           onClick={() => setShowHistory(true)}
           className="bg-white text-emerald-700 font-bold text-xs py-2 px-4 rounded-xl shadow-sm border border-emerald-100 hover:bg-emerald-100 transition-colors"
         >
-          View History 🕒
+          History 🕒
         </button>
       </div>
 
@@ -187,14 +208,12 @@ const AIReviewer: React.FC = () => {
             <label className="block text-xs font-bold text-slate-400 mb-1">SURAH</label>
             <select 
               className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
-              value={selectedSurah.id}
-              onChange={(e) => {
-                const s = QURAN_DATA.find(s => s.id === parseInt(e.target.value))!;
-                setSelectedSurah(s);
-                setSelectedAyahNum(1);
-              }}
+              value={selectedSurahId}
+              onChange={(e) => setSelectedSurahId(parseInt(e.target.value))}
             >
-              {QURAN_DATA.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+              {ALL_SURAH_NAMES.map((name, idx) => (
+                <option key={idx + 1} value={idx + 1}>{name}</option>
+              ))}
             </select>
           </div>
           <div>
@@ -203,22 +222,72 @@ const AIReviewer: React.FC = () => {
               className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
               value={selectedAyahNum}
               onChange={(e) => setSelectedAyahNum(parseInt(e.target.value))}
+              disabled={loadingSurah}
             >
-              {selectedSurah.ayahs.map(a => <option key={a.number} value={a.number}>Ayah {a.number}</option>)}
+              {currentSurah ? currentSurah.ayahs.map(a => (
+                <option key={a.number} value={a.number}>Ayah {a.number}</option>
+              )) : <option>Loading...</option>}
             </select>
           </div>
         </div>
 
-        <div className="bg-slate-50 p-6 rounded-2xl text-center border border-slate-100">
-          <p className="quran-font text-2xl text-slate-800 leading-relaxed mb-2">{selectedAyah?.text}</p>
-          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">English Translation</p>
-          <p className="text-xs text-slate-500 italic px-4">{selectedAyah?.translation_en}</p>
+        {/* Highlighted Target Ayah */}
+        <div className="bg-slate-50 p-6 rounded-2xl text-center border border-slate-100 relative group overflow-hidden">
+          <div className="absolute top-2 left-2 px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded text-[8px] font-black uppercase tracking-wider">Target Verse</div>
+          {loadingSurah ? (
+            <div className="animate-pulse space-y-3">
+               <div className="h-8 bg-slate-200 rounded w-3/4 mx-auto"></div>
+               <div className="h-4 bg-slate-100 rounded w-1/2 mx-auto"></div>
+            </div>
+          ) : (
+            <>
+              <p className="quran-font text-3xl text-slate-800 leading-relaxed mb-4 dir-rtl">{selectedAyah?.text}</p>
+              <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest mb-1">Translation</p>
+              <p className="text-xs text-slate-500 italic px-4 line-clamp-3">{selectedAyah?.translation_en}</p>
+            </>
+          )}
+        </div>
+
+        {/* Full Surah Verse List - "AL View" */}
+        <div className="mt-4">
+          <button 
+            onClick={() => setShowFullSurah(!showFullSurah)}
+            className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2"
+          >
+            {showFullSurah ? 'Hide Full Surah Text' : '📖 View Full Surah Context'}
+          </button>
+          
+          {showFullSurah && currentSurah && (
+            <div className="mt-4 max-h-[400px] overflow-y-auto border border-slate-100 rounded-2xl p-4 bg-slate-50/30 space-y-4 scrollbar-hide">
+              {currentSurah.ayahs.map((ayah) => (
+                <div 
+                  key={ayah.number}
+                  onClick={() => {
+                    setSelectedAyahNum(ayah.number);
+                    setShowFullSurah(false);
+                  }}
+                  className={`p-4 rounded-2xl border transition-all cursor-pointer hover:shadow-md ${
+                    selectedAyahNum === ayah.number 
+                      ? 'bg-emerald-50 border-emerald-200 ring-1 ring-emerald-500' 
+                      : 'bg-white border-slate-100'
+                  }`}
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <span className={`text-[9px] font-black px-2 py-0.5 rounded ${selectedAyahNum === ayah.number ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                      VERSE {ayah.number}
+                    </span>
+                  </div>
+                  <p className="quran-font text-xl text-right text-slate-800 leading-relaxed dir-rtl">{ayah.text}</p>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col items-center justify-center py-6 gap-4">
           <button
             onClick={isRecording ? stopRecording : startRecording}
-            disabled={isAnalyzing}
+            disabled={isAnalyzing || loadingSurah}
             className={`w-20 h-20 rounded-full flex items-center justify-center transition-all ${
               isRecording ? 'bg-red-500 animate-pulse' : 'bg-emerald-600 hover:bg-emerald-700'
             } shadow-lg text-white text-2xl disabled:opacity-50`}
@@ -226,31 +295,36 @@ const AIReviewer: React.FC = () => {
             {isRecording ? '⏹️' : '🎙️'}
           </button>
           <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
-            {isRecording ? 'Recording... Tap to stop' : isAnalyzing ? 'Analyzing...' : 'Tap to Record'}
+            {isRecording ? 'Recording... Tap to stop' : isAnalyzing ? 'Analyzing...' : 'Tap to Start Review'}
           </span>
         </div>
       </div>
 
       {isAnalyzing && (
-        <div className="flex flex-col items-center gap-3 p-10 bg-white rounded-3xl border border-dashed border-emerald-300">
+        <div className="flex flex-col items-center gap-3 p-10 bg-white rounded-[2.5rem] border border-dashed border-emerald-300 shadow-inner">
           <div className="w-10 h-10 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></div>
-          <p className="text-emerald-700 font-medium text-sm">Gemini Teacher is analyzing your recitation...</p>
+          <p className="text-emerald-700 font-bold text-xs uppercase tracking-widest">Gemini is analyzing...</p>
         </div>
       )}
 
       {feedback && (
-        <div className="bg-white p-6 rounded-3xl border border-emerald-100 shadow-md animate-in zoom-in duration-300">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2 text-emerald-700">
-              <span className="text-xl">🎓</span>
-              <h3 className="font-bold">AI Teacher Feedback</h3>
+        <div className="bg-white p-8 rounded-[3rem] border border-emerald-100 shadow-2xl animate-in zoom-in duration-300 relative overflow-hidden">
+          <div className="absolute -top-10 -right-10 w-32 h-32 bg-emerald-50 rounded-full opacity-50"></div>
+          <div className="flex items-center justify-between mb-6 relative z-10">
+            <div className="flex items-center gap-3 text-emerald-700">
+              <span className="text-2xl">🎓</span>
+              <h3 className="font-black text-sm uppercase tracking-widest">AI Teacher Feedback</h3>
             </div>
-            <button onClick={() => setFeedback(null)} className="text-slate-300 hover:text-slate-500">✕</button>
+            <button onClick={() => setFeedback(null)} className="text-slate-300 hover:text-slate-500 p-2">✕</button>
           </div>
-          <div className="text-sm text-slate-700 leading-relaxed space-y-4">
-            <div className="whitespace-pre-wrap font-medium bg-slate-50 p-4 rounded-2xl border border-slate-100">{feedback}</div>
+          <div className="relative z-10 space-y-4">
+            <div className="whitespace-pre-wrap text-sm text-slate-700 leading-relaxed bg-slate-50 p-6 rounded-[2rem] border border-slate-100 shadow-inner">
+              {feedback}
+            </div>
           </div>
-          <p className="mt-4 text-[10px] text-slate-400 text-center uppercase tracking-widest">Feedback saved to history</p>
+          <p className="mt-6 text-[9px] text-slate-400 text-center font-bold uppercase tracking-[0.2em] relative z-10">
+            Progress saved to your review history
+          </p>
         </div>
       )}
     </div>

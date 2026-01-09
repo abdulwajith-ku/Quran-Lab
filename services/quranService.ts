@@ -37,17 +37,18 @@ export const fetchSurahData = async (surahId: number): Promise<Surah> => {
  * Uses Gemini to search for specific content/topics across the Quran
  */
 export const searchQuranContent = async (query: string): Promise<SearchResult[]> => {
-  const prompt = `You are a Quran search expert. The user is searching for: "${query}". 
-  Search the Quran (all 114 Surahs) for verses related to this query. 
-  The query could be a keyword (e.g., "patience"), a topic (e.g., "fasting"), or a specific phrase in English, Tamil, or Arabic.
+  const prompt = `You are an expert Quran search engine. The user is searching for: "${query}".
+  Search the entire Quran (all 114 Surahs) for the most relevant verses matching this keyword, phrase, or topic.
   
-  Provide a list of the top 5 most relevant verses. 
-  For each result, include:
+  Provide a list of up to 10 relevant verses.
+  For each result, provide:
   1. surahId (1-114)
   2. surahName (English name)
   3. ayahNumber (the number of the verse in that surah)
-  4. snippet (a short part of the English or Tamil translation)
-  5. relevance (why this verse matches)
+  4. arabicText (The full Arabic text of that verse)
+  5. snippet (The English translation of that verse)
+  6. tamilSnippet (The Tamil translation of that verse)
+  7. relevance (A short explanation of why it matches)
   
   Format as a JSON array.`;
 
@@ -65,10 +66,12 @@ export const searchQuranContent = async (query: string): Promise<SearchResult[]>
               surahId: { type: Type.NUMBER },
               surahName: { type: Type.STRING },
               ayahNumber: { type: Type.NUMBER },
+              arabicText: { type: Type.STRING },
               snippet: { type: Type.STRING },
+              tamilSnippet: { type: Type.STRING },
               relevance: { type: Type.STRING }
             },
-            required: ["surahId", "surahName", "ayahNumber", "snippet", "relevance"]
+            required: ["surahId", "surahName", "ayahNumber", "arabicText", "snippet", "tamilSnippet", "relevance"]
           }
         }
       }

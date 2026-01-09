@@ -34,7 +34,9 @@ export interface SearchResult {
   surahId: number;
   surahName: string;
   ayahNumber: number;
+  arabicText: string;
   snippet: string;
+  tamilSnippet: string;
   relevance: string;
 }
 
@@ -48,6 +50,7 @@ export interface JuzInfo {
 export interface HifzProgress {
   surahId: number;
   ayahsMemorized: number[];
+  ayahsRecited: number[];
   isComplete: boolean;
 }
 
@@ -61,5 +64,5 @@ export interface PastReview {
 }
 
 export type ViewState = 'surah-list' | 'reader' | 'tracker' | 'ai-verify' | 'tajweed-tips';
-export type ListMode = 'surah' | 'juz';
+export type ListMode = 'surah';
 export type HifzMethod = 'standard' | 'chain';

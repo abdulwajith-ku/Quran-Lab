@@ -7,12 +7,15 @@ interface AyahReaderProps {
   surahId: number;
   onBack: () => void;
   isAyahMemorized: (surahId: number, ayahNum: number) => boolean;
-  toggleMemorized: (surahId: number, ayahNum: number) => void;
+  isAyahRecited: (surahId: number, ayahNum: number) => boolean;
+  toggleStatus: (surahId: number, ayahNum: number, type: 'hifz' | 'recite') => void;
 }
 
 type HifzPhase = 'focus' | 'chain';
 
-const AyahReader: React.FC<AyahReaderProps> = ({ surahId, onBack, isAyahMemorized, toggleMemorized }) => {
+const BISMILLAH_TEXT = "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ";
+
+const AyahReader: React.FC<AyahReaderProps> = ({ surahId, onBack, isAyahMemorized, isAyahRecited, toggleStatus }) => {
   const [surah, setSurah] = useState<Surah | null>(null);
   const [loading, setLoading] = useState(true);
   const [showWordByWord, setShowWordByWord] = useState(true);
@@ -370,111 +373,150 @@ const AyahReader: React.FC<AyahReaderProps> = ({ surahId, onBack, isAyahMemorize
       </div>
 
       <div className="space-y-12">
-        {surah.ayahs.map((ayah) => (
-          <div 
-            key={ayah.number} 
-            id={`ayah-${ayah.number}`}
-            className={`bg-white border transition-all duration-700 rounded-[3rem] p-8 shadow-sm hover:shadow-xl ${
-              playingAyah === ayah.number ? 'ring-2 ring-emerald-500 bg-emerald-50/20 scale-[1.02]' : 'border-slate-100'
-            } ${hifzMode && (ayah.number < hifzStart || ayah.number > hifzEnd) ? 'opacity-25 blur-[1px]' : ''}`}
-          >
-            <div className="flex justify-between items-center mb-8">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-2xl bg-slate-50 text-emerald-700 flex items-center justify-center text-[10px] font-black border border-slate-100 shadow-inner">
-                  {ayah.number}
+        {surah.ayahs.map((ayah) => {
+          let displayArabic = ayah.text;
+          let bismillahHeader = null;
+          
+          if (ayah.number === 1 && surah.id !== 9) {
+            if (surah.id !== 1 && displayArabic.startsWith(BISMILLAH_TEXT)) {
+              displayArabic = displayArabic.replace(BISMILLAH_TEXT, "").trim();
+              bismillahHeader = BISMILLAH_TEXT;
+            } else if (surah.id !== 1) {
+              bismillahHeader = BISMILLAH_TEXT;
+            }
+          }
+
+          return (
+            <div 
+              key={ayah.number} 
+              id={`ayah-${ayah.number}`}
+              className={`bg-white border transition-all duration-700 rounded-[3rem] p-8 shadow-sm hover:shadow-xl ${
+                playingAyah === ayah.number ? 'ring-2 ring-emerald-500 bg-emerald-50/20 scale-[1.02]' : 'border-slate-100'
+              } ${hifzMode && (ayah.number < hifzStart || ayah.number > hifzEnd) ? 'opacity-25 blur-[1px]' : ''}`}
+            >
+              {bismillahHeader && (
+                <div className="text-center mb-8 animate-in fade-in duration-1000">
+                  <div className="quran-font text-4xl text-slate-800 tracking-widest leading-relaxed">
+                    {bismillahHeader}
+                  </div>
+                  <div className="h-0.5 w-24 bg-emerald-100 mx-auto mt-4 rounded-full"></div>
                 </div>
-                <button 
-                  onClick={() => playAyahAudio(ayah.number)}
-                  className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
-                    playingAyah === ayah.number ? 'bg-emerald-600 text-white shadow-xl scale-110' : 'bg-white text-emerald-700 border border-slate-200 shadow-md hover:bg-emerald-50'
-                  }`}
-                >
-                  {playingAyah === ayah.number ? '⏸' : '▶'}
-                </button>
+              )}
+
+              <div className="flex justify-between items-center mb-8">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-2xl bg-slate-50 text-emerald-700 flex items-center justify-center text-[10px] font-black border border-slate-100 shadow-inner">
+                    {ayah.number}
+                  </div>
+                  <button 
+                    onClick={() => playAyahAudio(ayah.number)}
+                    className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
+                      playingAyah === ayah.number ? 'bg-emerald-600 text-white shadow-xl scale-110' : 'bg-white text-emerald-700 border border-slate-200 shadow-md hover:bg-emerald-50'
+                    }`}
+                  >
+                    {playingAyah === ayah.number ? '⏸' : '▶'}
+                  </button>
+                </div>
+                
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => toggleStatus(surah.id, ayah.number, 'recite')}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all active:scale-95 border ${
+                      isAyahRecited(surah.id, ayah.number) 
+                        ? 'bg-blue-600 text-white border-blue-600 shadow-md' 
+                        : 'bg-white text-blue-500 border-blue-100 hover:bg-blue-50'
+                    }`}
+                  >
+                    {isAyahRecited(surah.id, ayah.number) ? 'Recited ✓' : 'Mark Recited'}
+                  </button>
+                  <button 
+                    onClick={() => toggleStatus(surah.id, ayah.number, 'hifz')}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all active:scale-95 border ${
+                      isAyahMemorized(surah.id, ayah.number) 
+                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-md' 
+                        : 'bg-white text-emerald-600 border-emerald-100 hover:bg-emerald-50'
+                    }`}
+                  >
+                    {isAyahMemorized(surah.id, ayah.number) ? 'Hifz ✓' : 'Mark Hifz'}
+                  </button>
+                </div>
               </div>
-              <button 
-                onClick={() => toggleMemorized(surah.id, ayah.number)}
-                className={`text-2xl transition-all active:scale-90 p-2 rounded-2xl ${isAyahMemorized(surah.id, ayah.number) ? 'bg-emerald-50 scale-110 opacity-100' : 'grayscale opacity-10 hover:opacity-40 hover:grayscale-0'}`}
-              >
-                ✅
-              </button>
-            </div>
 
-            <div className="quran-font text-4xl leading-[4.5rem] text-right mb-10 text-slate-800 dir-rtl selection:bg-emerald-200 tracking-wide">
-              {ayah.text}
-            </div>
+              <div className="quran-font text-4xl leading-[4.5rem] text-right mb-10 text-slate-800 dir-rtl selection:bg-emerald-200 tracking-wide">
+                {displayArabic}
+              </div>
 
-            {showWordByWord && (
+              {showWordByWord && (
+                <div className="mb-10">
+                  {wbwData[ayah.number] ? (
+                    <div className="flex flex-wrap flex-row-reverse gap-4 bg-slate-50/50 p-6 rounded-[2.5rem] border border-slate-100 shadow-inner">
+                      {wbwData[ayah.number].map((word, idx) => (
+                        <div key={idx} className="flex flex-col items-center bg-white p-3.5 rounded-2xl border border-slate-100 shadow-sm min-w-[85px] hover:border-emerald-200 transition-colors cursor-default group">
+                          <span className="quran-font text-xl text-emerald-900 mb-2 group-hover:scale-110 transition-transform">{word.arabic}</span>
+                          <span className="text-[10px] text-slate-400 font-black uppercase tracking-tighter mb-1 leading-none">{word.english}</span>
+                          <span className="text-[10px] text-emerald-600 font-bold tamil-font italic leading-none">{word.tamil}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <button 
+                      onClick={() => loadWbw(ayah)}
+                      className="w-full py-6 border-2 border-dashed border-emerald-100 rounded-[2.5rem] text-emerald-600 text-[10px] font-black uppercase tracking-[0.2em] hover:bg-emerald-50 hover:border-emerald-300 transition-all flex items-center justify-center gap-3"
+                    >
+                      <span>✨</span> Generate Tamil Word-By-Word
+                    </button>
+                  )}
+                </div>
+              )}
+
               <div className="mb-10">
-                {wbwData[ayah.number] ? (
-                  <div className="flex flex-wrap flex-row-reverse gap-4 bg-slate-50/50 p-6 rounded-[2.5rem] border border-slate-100 shadow-inner">
-                    {wbwData[ayah.number].map((word, idx) => (
-                      <div key={idx} className="flex flex-col items-center bg-white p-3.5 rounded-2xl border border-slate-100 shadow-sm min-w-[85px] hover:border-emerald-200 transition-colors cursor-default group">
-                        <span className="quran-font text-xl text-emerald-900 mb-2 group-hover:scale-110 transition-transform">{word.arabic}</span>
-                        <span className="text-[10px] text-slate-400 font-black uppercase tracking-tighter mb-1 leading-none">{word.english}</span>
-                        <span className="text-[10px] text-emerald-600 font-bold tamil-font italic leading-none">{word.tamil}</span>
-                      </div>
-                    ))}
+                {tajweedData[ayah.number] ? (
+                  <div className="bg-indigo-50/50 rounded-[2.5rem] p-6 border border-indigo-100 space-y-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-xl">✨</span>
+                      <h4 className="text-xs font-black text-indigo-900 uppercase tracking-widest">Tajweed & Tartil Guide</h4>
+                    </div>
+                    <div className="space-y-4">
+                      {tajweedData[ayah.number].map((rule, idx) => (
+                        <div key={idx} className="bg-white p-4 rounded-2xl border border-indigo-50 shadow-sm">
+                          <div className="flex justify-between items-center mb-2">
+                            <span className="px-3 py-1 bg-indigo-600 text-white text-[9px] font-black rounded-lg uppercase tracking-wider">{rule.rule}</span>
+                            <span className="quran-font text-sm text-indigo-900 font-bold">{rule.location}</span>
+                          </div>
+                          <p className="text-xs text-slate-600 leading-relaxed mb-1 font-medium">{rule.explanation_en}</p>
+                          <p className="text-xs text-indigo-700 tamil-font leading-relaxed italic">{rule.explanation_ta}</p>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 ) : (
                   <button 
-                    onClick={() => loadWbw(ayah)}
-                    className="w-full py-6 border-2 border-dashed border-emerald-100 rounded-[2.5rem] text-emerald-600 text-[10px] font-black uppercase tracking-[0.2em] hover:bg-emerald-50 hover:border-emerald-300 transition-all flex items-center justify-center gap-3"
+                    onClick={() => loadTajweed(ayah)}
+                    disabled={loadingTajweed[ayah.number]}
+                    className="w-full py-5 bg-indigo-50 text-indigo-700 rounded-[2.5rem] text-[10px] font-black uppercase tracking-[0.2em] border border-indigo-100 hover:bg-indigo-100 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
                   >
-                    <span>✨</span> Generate Tamil Word-By-Word
+                    {loadingTajweed[ayah.number] ? (
+                      <span className="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></span>
+                    ) : (
+                      <><span>💎</span> View Tajweed & Tartil Guide</>
+                    )}
                   </button>
                 )}
               </div>
-            )}
 
-            {/* Per-Verse Tajweed Guidance Section */}
-            <div className="mb-10">
-              {tajweedData[ayah.number] ? (
-                <div className="bg-indigo-50/50 rounded-[2.5rem] p-6 border border-indigo-100 space-y-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-xl">✨</span>
-                    <h4 className="text-xs font-black text-indigo-900 uppercase tracking-widest">Tajweed & Tartil Guide</h4>
-                  </div>
-                  <div className="space-y-4">
-                    {tajweedData[ayah.number].map((rule, idx) => (
-                      <div key={idx} className="bg-white p-4 rounded-2xl border border-indigo-50 shadow-sm">
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="px-3 py-1 bg-indigo-600 text-white text-[9px] font-black rounded-lg uppercase tracking-wider">{rule.rule}</span>
-                          <span className="quran-font text-sm text-indigo-900 font-bold">{rule.location}</span>
-                        </div>
-                        <p className="text-xs text-slate-600 leading-relaxed mb-1 font-medium">{rule.explanation_en}</p>
-                        <p className="text-xs text-indigo-700 tamil-font leading-relaxed italic">{rule.explanation_ta}</p>
-                      </div>
-                    ))}
-                  </div>
+              <div className="space-y-6 pt-8 border-t border-slate-100">
+                <div className="flex gap-4">
+                  <span className="text-[10px] font-black text-slate-300 uppercase mt-1.5 w-6 shrink-0">EN</span>
+                  <p className="text-sm text-slate-600 leading-relaxed font-medium italic">{ayah.translation_en}</p>
                 </div>
-              ) : (
-                <button 
-                  onClick={() => loadTajweed(ayah)}
-                  disabled={loadingTajweed[ayah.number]}
-                  className="w-full py-5 bg-indigo-50 text-indigo-700 rounded-[2.5rem] text-[10px] font-black uppercase tracking-[0.2em] border border-indigo-100 hover:bg-indigo-100 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
-                >
-                  {loadingTajweed[ayah.number] ? (
-                    <span className="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></span>
-                  ) : (
-                    <><span>💎</span> View Tajweed & Tartil Guide</>
-                  )}
-                </button>
-              )}
-            </div>
-
-            <div className="space-y-6 pt-8 border-t border-slate-100">
-              <div className="flex gap-4">
-                <span className="text-[10px] font-black text-slate-300 uppercase mt-1.5 w-6 shrink-0">EN</span>
-                <p className="text-sm text-slate-600 leading-relaxed font-medium italic">{ayah.translation_en}</p>
-              </div>
-              <div className="flex gap-4">
-                <span className="text-[10px] font-black text-emerald-200 uppercase mt-1.5 w-6 shrink-0">TA</span>
-                <p className="text-sm text-slate-500 tamil-font leading-relaxed font-medium">{ayah.translation_ta}</p>
+                <div className="flex gap-4">
+                  <span className="text-[10px] font-black text-emerald-200 uppercase mt-1.5 w-6 shrink-0">TA</span>
+                  <p className="text-sm text-slate-500 tamil-font leading-relaxed font-medium">{ayah.translation_ta}</p>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

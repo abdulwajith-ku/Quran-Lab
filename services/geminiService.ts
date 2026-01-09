@@ -36,6 +36,32 @@ export const verifyRecitation = async (
   return response.text || "Could not analyze recitation. Please try again.";
 };
 
+export const transcribeAudio = async (audioBase64: string): Promise<string> => {
+  const ai = getAIClient();
+  
+  const audioPart = {
+    inlineData: {
+      mimeType: 'audio/webm',
+      data: audioBase64,
+    },
+  };
+  
+  const promptPart = {
+    text: "Transcribe the following audio which contains a search query for the Quran. It might be a topic, a verse snippet, or a surah name in English, Arabic, or Tamil. Return ONLY the transcribed text in English or Arabic script as appropriate. Do not include any other text."
+  };
+
+  try {
+    const response: GenerateContentResponse = await ai.models.generateContent({
+      model: 'gemini-2.5-flash-native-audio-preview-12-2025',
+      contents: { parts: [audioPart, promptPart] },
+    });
+    return response.text?.trim() || "";
+  } catch (error) {
+    console.error("Transcription error:", error);
+    return "";
+  }
+};
+
 export const getHifzTips = async (surahName: string): Promise<string> => {
   const ai = getAIClient();
   const response = await ai.models.generateContent({
