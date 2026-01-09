@@ -20,7 +20,6 @@ export const fetchSurahData = async (surahId: number): Promise<Surah> => {
     let text = ayah.text;
     
     // Strip Bismillah from first ayah of Surahs 2-114 (except 9)
-    // We leave it for Surah 1 (Al-Fatihah) as it is technically the first verse
     if (surahId !== 1 && surahId !== 9 && ayah.numberInSurah === 1) {
       if (text.startsWith(BISMILLAH_TEXT)) {
         text = text.replace(BISMILLAH_TEXT, "").trim();
@@ -53,20 +52,9 @@ export const fetchSurahData = async (surahId: number): Promise<Surah> => {
  */
 export const searchQuranContent = async (query: string): Promise<SearchResult[]> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  const prompt = `You are an expert Quran search engine. The user is searching for: "${query}".
-  Search the entire Quran (all 114 Surahs) for the most relevant verses matching this keyword, phrase, or topic.
-  
-  Provide a list of up to 10 relevant verses.
-  For each result, provide:
-  1. surahId (1-114)
-  2. surahName (English name)
-  3. ayahNumber (the number of the verse in that surah)
-  4. arabicText (The full Arabic text of that verse)
-  5. snippet (The English translation of that verse)
-  6. tamilSnippet (The Tamil translation of that verse)
-  7. relevance (A short explanation of why it matches)
-  
-  Format as a JSON array.`;
+  const prompt = `Search Quran for: "${query}". Return top 10 matches. 
+  Include: surahId, surahName, ayahNumber, arabicText, snippet(EN), tamilSnippet(TA), relevance. 
+  Output: JSON array.`;
 
   try {
     const response = await ai.models.generateContent({
@@ -105,9 +93,7 @@ export const searchQuranContent = async (query: string): Promise<SearchResult[]>
  */
 export const getWordByWordTranslation = async (ayahText: string): Promise<Word[]> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  const prompt = `Break down the following Arabic Ayah into individual words and provide their English and Tamil translations. 
-  Format your response as a JSON array of objects with properties: "arabic", "english", "tamil".
-  Ayah: "${ayahText}"`;
+  const prompt = `Convert Ayah to JSON word-by-word: "${ayahText}". Props: "arabic", "english", "tamil".`;
 
   try {
     const response = await ai.models.generateContent({
@@ -142,16 +128,9 @@ export const getWordByWordTranslation = async (ayahText: string): Promise<Word[]
  */
 export const getAyahTajweedRules = async (ayahText: string): Promise<TajweedRule[]> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  const prompt = `Analyze the following Arabic Ayah for Tajweed and Tartil rules. 
-  Identify rules like Qalqalah, Ghunnah, Ikhfa, Idgham, Madd, and correct articulation (Makhraj).
-  Provide a list of rules found. For each rule, include:
-  1. The name of the rule (e.g., "Qalqalah")
-  2. The specific part of the text it applies to (location)
-  3. A short explanation in English
-  4. A short explanation in Tamil
-  
-  Ayah: "${ayahText}"
-  Format as a JSON array.`;
+  const prompt = `List Tajweed rules for: "${ayahText}". 
+  Props: "rule"(name), "location"(text), "explanation_en", "explanation_ta". 
+  Output: JSON array.`;
 
   try {
     const response = await ai.models.generateContent({

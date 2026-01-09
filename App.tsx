@@ -187,46 +187,43 @@ const App: React.FC = () => {
 
   const renderSelectionList = () => {
     return (
-      <div className="space-y-6 animate-in fade-in duration-500">
-        <div className="flex flex-col gap-5">
+      <div className="space-y-3 animate-in fade-in duration-500">
+        <div className="flex flex-col gap-3">
           <div className="flex items-center justify-between px-1">
-            <div>
-              <h2 className="text-xl font-black text-slate-800 uppercase tracking-tighter text-emerald-800">The Holy Quran</h2>
-              <p className="text-xs text-slate-400 font-medium">Tamil & English Translation</p>
-            </div>
+            <h2 className="text-sm font-black text-emerald-800 uppercase tracking-tight">The Holy Quran</h2>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-2">
             <div className="relative group">
-              <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-                <span className="text-slate-400 group-focus-within:text-emerald-500 transition-colors">🔍</span>
+              <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                <span className="text-slate-400 group-focus-within:text-emerald-500 text-sm">🔍</span>
               </div>
               <input 
                 type="text"
-                placeholder={listMode === 'surah' ? "Search word or topic..." : "Search Juz number..."}
+                placeholder={listMode === 'surah' ? "Search word or topic..." : "Search Juz..."}
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
                   if (e.target.value === '') setSearchResults([]);
                 }}
                 onKeyDown={(e) => e.key === 'Enter' && handleDeepSearch()}
-                className="w-full bg-white border border-slate-200 rounded-[2rem] py-4 pl-12 pr-40 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all shadow-sm hover:shadow-md"
+                className="w-full bg-white border border-slate-200 rounded-2xl py-2.5 pl-10 pr-32 text-xs outline-none focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all shadow-sm"
               />
-              <div className="absolute inset-y-0 right-2 flex items-center gap-1.5">
+              <div className="absolute inset-y-0 right-1.5 flex items-center gap-1">
                 <button 
                   onClick={isRecordingSearch ? stopVoiceSearch : startVoiceSearch}
-                  className={`p-2.5 rounded-full transition-all flex items-center justify-center ${
+                  className={`p-1.5 rounded-full transition-all flex items-center justify-center ${
                     isRecordingSearch 
                       ? 'bg-rose-500 text-white animate-pulse' 
                       : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
                   }`}
                   title="Voice Search"
                 >
-                  <span className="text-lg">{isRecordingSearch ? '⏹' : '🎙️'}</span>
+                  <span className="text-base">{isRecordingSearch ? '⏹' : '🎙️'}</span>
                 </button>
                 <button 
                   onClick={() => handleDeepSearch()}
-                  className="bg-emerald-600 text-white text-[9px] font-black uppercase tracking-wider px-4 py-2.5 rounded-2xl hover:bg-emerald-700 transition-colors shadow-sm"
+                  className="bg-emerald-600 text-white text-[8px] font-black uppercase tracking-wider px-3 py-1.5 rounded-xl hover:bg-emerald-700 transition-colors"
                 >
                   Search
                 </button>
@@ -234,56 +231,47 @@ const App: React.FC = () => {
             </div>
             
             {(isTranscribing || isRecordingSearch) && (
-              <div className="flex items-center gap-3 px-4 animate-pulse">
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
-                <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">
-                  {isRecordingSearch ? 'Listening to your query...' : 'Transcribing voice input...'}
+              <div className="flex items-center gap-2 px-3 animate-pulse">
+                <div className="w-1 h-1 rounded-full bg-emerald-500"></div>
+                <span className="text-[8px] font-black text-emerald-600 uppercase tracking-widest">
+                  {isRecordingSearch ? 'Listening...' : 'Transcribing...'}
                 </span>
               </div>
             )}
           </div>
 
           { (isSearchingContent || searchResults.length > 0) && (
-            <div className="bg-slate-900 rounded-[2.5rem] p-6 border border-slate-800 animate-in slide-in-from-top-4 shadow-2xl overflow-hidden">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Global Matches for "{searchQuery}"</h3>
-                {isSearchingContent && <div className="w-4 h-4 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin"></div>}
+            <div className="bg-slate-900 rounded-2xl p-4 border border-slate-800 animate-in slide-in-from-top-2 shadow-xl overflow-hidden">
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="text-[8px] font-black text-emerald-400 uppercase tracking-widest">Matches for "{searchQuery}"</h3>
+                {isSearchingContent && <div className="w-3 h-3 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin"></div>}
               </div>
-              <div className="space-y-4 max-h-[500px] overflow-y-auto scrollbar-hide pr-1">
+              <div className="space-y-3 max-h-[300px] overflow-y-auto scrollbar-hide">
                 {searchResults.length === 0 && !isSearchingContent ? (
-                   <p className="text-slate-500 text-xs italic text-center py-4">No specific verse matches found.</p>
+                   <p className="text-slate-500 text-[10px] italic text-center py-2">No matches found.</p>
                 ) : (
                   searchResults.map((res, i) => (
                     <div 
                       key={i}
-                      className="w-full bg-white/5 p-5 rounded-3xl border border-white/10 text-left hover:bg-white/[0.08] transition-all group relative"
+                      className="w-full bg-white/5 p-3 rounded-xl border border-white/5 text-left hover:bg-white/[0.08] transition-all group relative"
                     >
-                      <div className="flex justify-between items-center mb-3">
+                      <div className="flex justify-between items-center mb-2">
                         <button 
                           onClick={() => openSurahById(res.surahId)}
-                          className="text-[10px] font-black text-emerald-400 hover:underline"
+                          className="text-[9px] font-black text-emerald-400 hover:underline"
                         >
                           {res.surahName} {res.surahId}:{res.ayahNumber}
                         </button>
-                        <div className="flex items-center gap-2">
-                           <button 
-                            onClick={() => copyToClipboard(res)}
-                            className={`p-2 rounded-xl text-[10px] font-bold transition-all ${
-                              copyStatus === (res.surahId + '-' + res.ayahNumber) ? 'bg-emerald-500 text-white' : 'bg-white/10 text-slate-400 hover:text-white hover:bg-white/20'
-                            }`}
-                          >
-                            {copyStatus === (res.surahId + '-' + res.ayahNumber) ? 'Copied! ✅' : 'Copy 📋'}
-                          </button>
-                          <span className="text-[8px] font-bold text-slate-500 bg-white/5 px-2 py-1 rounded-full">{res.relevance}</span>
-                        </div>
+                        <button 
+                          onClick={() => copyToClipboard(res)}
+                          className={`p-1 px-2 rounded-lg text-[8px] font-bold transition-all ${
+                            copyStatus === (res.surahId + '-' + res.ayahNumber) ? 'bg-emerald-500 text-white' : 'bg-white/10 text-slate-400'
+                          }`}
+                        >
+                          {copyStatus === (res.surahId + '-' + res.ayahNumber) ? 'Done!' : 'Copy'}
+                        </button>
                       </div>
-                      
-                      <p className={`${quranScript === 'uthmani' ? 'font-uthmani' : 'font-indopak'} text-xl text-right text-white leading-relaxed mb-3 dir-rtl`}>{res.arabicText}</p>
-                      
-                      <div className="space-y-2 border-t border-white/5 pt-3">
-                        <p className="text-[11px] text-slate-400 leading-relaxed italic"><span className="text-[8px] font-black text-slate-600 uppercase mr-1">EN</span> {res.snippet}</p>
-                        <p className="text-[11px] text-emerald-100/60 tamil-font leading-relaxed"><span className="text-[8px] font-black text-emerald-900 uppercase mr-1 bg-emerald-400/20 px-1 rounded">TA</span> {res.tamilSnippet}</p>
-                      </div>
+                      <p className={`${quranScript === 'uthmani' ? 'font-uthmani' : 'font-indopak'} text-lg text-right text-white leading-relaxed mb-2 dir-rtl`}>{res.arabicText}</p>
                     </div>
                   ))
                 )}
@@ -291,94 +279,70 @@ const App: React.FC = () => {
             </div>
           )}
 
-          <div className="bg-slate-100 p-1.5 rounded-3xl flex gap-1 shadow-inner">
+          <div className="bg-slate-100 p-1 rounded-2xl flex gap-1 shadow-inner">
             <button
               onClick={() => setListMode('surah')}
-              className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-2xl transition-all ${
-                listMode === 'surah' ? 'bg-white shadow-md text-emerald-700 translate-y-[-1px]' : 'text-slate-500'
+              className={`flex-1 py-2 text-[9px] font-black uppercase tracking-widest rounded-xl transition-all ${
+                listMode === 'surah' ? 'bg-white shadow-sm text-emerald-700' : 'text-slate-500'
               }`}
             >
-              Surah-wise
+              Surahs
             </button>
             <button
               onClick={() => setListMode('juz')}
-              className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-2xl transition-all ${
-                listMode === 'juz' ? 'bg-white shadow-md text-emerald-700 translate-y-[-1px]' : 'text-slate-500'
+              className={`flex-1 py-2 text-[9px] font-black uppercase tracking-widest rounded-xl transition-all ${
+                listMode === 'juz' ? 'bg-white shadow-sm text-emerald-700' : 'text-slate-500'
               }`}
             >
-              Juz-wise
+              Juz
             </button>
           </div>
         </div>
 
         {listMode === 'surah' ? (
-          <div className="grid grid-cols-1 gap-3">
-            {filteredSurahs.length > 0 ? (
-              filteredSurahs.map((surah) => (
-                <button
-                  key={surah.id}
-                  onClick={() => openSurahById(surah.id)}
-                  className="w-full bg-white p-5 rounded-[2rem] border border-slate-100 flex items-center justify-between transition-all group hover:border-emerald-200 hover:shadow-xl hover:translate-y-[-2px]"
-                >
-                  <div className="flex items-center gap-5 flex-1">
-                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center font-black text-sm border bg-emerald-50 text-emerald-700 border-emerald-100 group-hover:bg-emerald-600 group-hover:text-white transition-all">
-                      {surah.id}
-                    </div>
-                    <div className="text-left">
-                      <h4 className="font-bold text-slate-800 text-base">{surah.name}</h4>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Surah {surah.id}</span>
-                        <div className="w-1 h-1 rounded-full bg-slate-200"></div>
-                        <span className="text-[9px] text-emerald-600 font-black uppercase tracking-widest">Explore →</span>
-                      </div>
-                    </div>
+          <div className="grid grid-cols-1 gap-2">
+            {filteredSurahs.map((surah) => (
+              <button
+                key={surah.id}
+                onClick={() => openSurahById(surah.id)}
+                className="w-full bg-white p-3 rounded-2xl border border-slate-100 flex items-center justify-between transition-all group hover:border-emerald-100 hover:shadow-md"
+              >
+                <div className="flex items-center gap-4 flex-1">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center font-black text-xs border bg-emerald-50 text-emerald-700 border-emerald-100 group-hover:bg-emerald-600 group-hover:text-white transition-all">
+                    {surah.id}
                   </div>
-                </button>
-              ))
-            ) : (
-              <div className="text-center py-20 bg-white rounded-[3rem] border border-dashed border-slate-200">
-                <p className="text-3xl mb-4">🔍</p>
-                <p className="text-slate-400 text-sm font-medium">No Surahs found matching "{searchQuery}"</p>
-                <button 
-                  onClick={() => handleDeepSearch()}
-                  className="mt-4 text-xs font-black text-emerald-600 uppercase tracking-widest hover:underline"
-                >
-                  Try Global Content Search?
-                </button>
-              </div>
-            )}
+                  <div className="text-left">
+                    <h4 className="font-bold text-slate-800 text-sm">{surah.name}</h4>
+                    <span className="text-[8px] text-slate-400 font-bold uppercase tracking-widest">Surah {surah.id}</span>
+                  </div>
+                </div>
+                <div className="text-right">
+                   <span className="text-[9px] text-emerald-600 font-black uppercase tracking-tighter opacity-0 group-hover:opacity-100 transition-opacity">Read →</span>
+                </div>
+              </button>
+            ))}
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-4">
-            {filteredJuzs.length > 0 ? (
-              filteredJuzs.map((juz) => (
-                <button
-                  key={juz.id}
-                  onClick={() => openSurahById(juz.startSurah)}
-                  className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm hover:border-emerald-200 hover:shadow-2xl transition-all group text-left flex flex-col justify-between h-40"
-                >
-                  <div>
-                    <h4 className="font-black text-slate-800 text-xl italic">Juz {juz.id}</h4>
-                    <p className="text-[10px] text-slate-400 font-bold leading-tight mt-2 uppercase tracking-tighter">
-                      Starts at <br/>{ALL_SURAH_NAMES[juz.startSurah - 1]}
-                    </p>
-                  </div>
-                  <div className="flex justify-between items-end">
-                    <span className="text-[9px] font-black text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-xl uppercase tracking-widest">
-                      Begin
-                    </span>
-                    <div className="w-8 h-8 rounded-2xl bg-slate-50 group-hover:bg-emerald-500 group-hover:scale-110 transition-all flex items-center justify-center text-white text-xs">
-                      {juz.id}
-                    </div>
-                  </div>
-                </button>
-              ))
-            ) : (
-              <div className="col-span-2 text-center py-20 bg-white rounded-[3rem] border border-dashed border-slate-200">
-                <p className="text-3xl mb-4">🔍</p>
-                <p className="text-slate-400 text-sm font-medium">No Juz found matching "{searchQuery}"</p>
-              </div>
-            )}
+          <div className="grid grid-cols-2 gap-2">
+            {filteredJuzs.map((juz) => (
+              <button
+                key={juz.id}
+                onClick={() => openSurahById(juz.startSurah)}
+                className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm hover:border-emerald-100 hover:shadow-md transition-all group text-left flex flex-col justify-between h-28"
+              >
+                <div>
+                  <h4 className="font-black text-slate-800 text-lg">Juz {juz.id}</h4>
+                  <p className="text-[8px] text-slate-400 font-bold leading-tight mt-1 uppercase tracking-tighter">
+                    Starts: {ALL_SURAH_NAMES[juz.startSurah - 1]}
+                  </p>
+                </div>
+                <div className="flex justify-between items-end">
+                  <span className="text-[8px] font-black text-emerald-700 bg-emerald-50 px-2 py-1 rounded-lg uppercase">
+                    Begin
+                  </span>
+                </div>
+              </button>
+            ))}
           </div>
         )}
       </div>

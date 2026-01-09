@@ -7,83 +7,65 @@ interface Rule {
   category: string;
   desc_en: string;
   desc_ta: string;
+  tip_en: string;
+  tip_ta: string;
   example: string;
+  letters?: string;
 }
 
 const TAJWEED_RULES: Rule[] = [
+  // Qalqalah
+  {
+    category: "Qalqalah",
+    title: "Echoing Sound (قلقلة)",
+    desc_en: "An echoing sound produced when the letters (ق ط ب ج د) are Sakin. There are 3 levels: Kubra (major), Wusta (middle), and Sughra (minor).",
+    desc_ta: "குத்பு ஜத்தின் (ق ط ب ج د) ஆகிய எழுத்துக்களுக்கு சுக்கூன் இருக்கும்போது ஒருவித அதிரும் சத்தத்துடன் ஓதுதல்.",
+    tip_en: "Bounce the sound off. Don't let it be flat.",
+    tip_ta: "ஒலியை அதிரச் செய்யவும். தட்டையாக ஓத வேண்டாம்.",
+    example: "الْفَلَقِ",
+    letters: "ق ط ب ج د"
+  },
+  // Ghunnah
+  {
+    category: "Ghunnah",
+    title: "Nasal Sound (غنة)",
+    desc_en: "A 2-count nasal sound that is obligatory when Noon (ن) or Meem (م) has a Shaddah.",
+    desc_ta: "நூன் (ن) அல்லது மீம் (م) எழுத்துக்களுக்கு ஷத்தா இருக்கும்போது 2 மாத்திரை அளவு மூக்கொலியுடன் ஓதுவது கடமையாகும்.",
+    tip_en: "Hold the sound in your nose for exactly 2 seconds.",
+    tip_ta: "ஒலியை மூக்கினுள் சரியாக 2 மாத்திரை அளவு நிறுத்தி ஓதவும்.",
+    example: "إِنَّ / ثُمَّ",
+    letters: "نّ مّ"
+  },
   // Noon Sakinah & Tanween
   {
     category: "Noon Sakinah",
-    title: "Izhaar (إظهار)",
-    desc_en: "Clear pronunciation of Noon Sakinah or Tanween when followed by Throat letters.",
-    desc_ta: "தொண்டை எழுத்துக்கள் வரும்போது நூன் சாக்கின் அல்லது தன்வீனினைத் தெளிவாக ஓதுதல்.",
-    example: "مِنْ هَادٍ"
+    title: "Ikhfa (إخفاء)",
+    desc_en: "Hiding the sound of Noon. Pronounce it between Izhaar and Idghaam with a Ghunnah.",
+    desc_ta: "நூன் ஒலியை மறைத்து ஓதுதல். இது இழ்ஹாருக்கும் இத் காமிற்கும் இடைப்பட்ட ஒரு நிலையாகும்.",
+    tip_en: "Prepare your mouth for the next letter while making the nasal sound.",
+    tip_ta: "மூக்கொலியை உருவாக்கும்போதே அடுத்த எழுத்தை ஓத வாயைத் தயார் செய்யவும்.",
+    example: "مِنْ قَبْلُ",
+    letters: "ت ث ج د ذ ز س ش ص ض ط ظ ف ق ك"
   },
   {
     category: "Noon Sakinah",
-    title: "Idghaam (إدغام)",
-    desc_en: "Merging the Noon Sakinah or Tanween into the following letter.",
-    desc_ta: "நூன் சாக்கின் அல்லது தன்வீனினை அடுத்து வரும் எழுத்துடன் இணைத்து ஓதுதல்.",
-    example: "مَنْ يَقُولُ"
+    title: "Iqlab (إقلاب)",
+    desc_en: "Changing the sound of Noon/Tanween into a Meem when followed by 'Ba' (ب).",
+    desc_ta: "நூன் அல்லது தன்வீனை அடுத்து 'பா' (ب) வரும்போது நூன் ஒலியை 'மீம்' ஆக மாற்றி ஓதுதல்.",
+    tip_en: "Lightly close your lips. Don't press them too hard.",
+    tip_ta: "உதடுகளை இலேசாக மூடவும். பலமாக அழுத்த வேண்டாம்.",
+    example: "مِنْ بَعْدِ",
+    letters: "ب"
   },
+  // More Makharij
   {
-    category: "Noon Sakinah",
-    title: "Iqlaab (إقلاب)",
-    desc_en: "Changing Noon Sakinah or Tanween into a small 'Meem' when followed by 'Ba'.",
-    desc_ta: "நூன் சாக்கின் அல்லது தன்வீனினை அடுத்து 'பா' வரும்போது அதை 'மீம்' ஆக மாற்றி ஓதுதல்.",
-    example: "مِنْ بَعْدِ"
-  },
-  {
-    category: "Noon Sakinah",
-    title: "Ikhfaa (إخفاء)",
-    desc_en: "Hiding the sound of Noon Sakinah or Tanween with a slight nasal sound.",
-    desc_ta: "நூன் சாக்கின் அல்லது தன்வீனினை மறைத்து இலேசான மூக்கொலியுடன் ஓதுதல்.",
-    example: "أَنْ كَانَ"
-  },
-  // Meem Sakinah
-  {
-    category: "Meem Sakinah",
-    title: "Ikhfaa Shafawi (إخفاء شفوي)",
-    desc_en: "Hiding the Meem Sakinah when followed by 'Ba' with Ghunnah.",
-    desc_ta: "மீம் சாக்கினை அடுத்து 'பா' வரும்போது குன்னாவோடு மறைத்து ஓதுதல்.",
-    example: "تَرْمِيهِمْ بِحِجَارَةٍ"
-  },
-  {
-    category: "Meem Sakinah",
-    title: "Izhaar Shafawi (إظهار شفوي)",
-    desc_en: "Pronouncing Meem Sakinah clearly when followed by any letter except 'Ba' or 'Meem'.",
-    desc_ta: "'பா' மற்றும் 'மீம்' தவிர மற்ற எழுத்துக்கள் வரும்போது மீம் சாக்கினைத் தெளிவாக ஓதுதல்.",
-    example: "لَكُمْ دِينُكُمْ"
-  },
-  // Madd
-  {
-    category: "Madd (Prolongation)",
-    title: "Madd Muttasil (مصل)",
-    desc_en: "Compulsory prolongation of 4-5 counts when Hamzah follows Madd in the same word.",
-    desc_ta: "ஒரே வார்த்தையில் மத் எழுத்தைத் தொடர்ந்து ஹம்ஸா வரும்போது 4-5 மாத்திரை அளவு நீட்டி ஓதுதல்.",
-    example: "السَّمَاءُ"
-  },
-  {
-    category: "Madd (Prolongation)",
-    title: "Madd Munfasil (منفصل)",
-    desc_en: "Prolongation of 2, 4, or 5 counts when Hamzah follows Madd in the next word.",
-    desc_ta: "மத் எழுத்தைத் தொடர்ந்து அடுத்த வார்த்தையின் ஆரம்பத்தில் ஹம்ஸா வரும்போது நீட்டி ஓதுதல்.",
-    example: "إِنَّا أَعْطَيْنَاكَ"
-  },
-  // Others
-  {
-    category: "General Rules",
-    title: "Qalqalah (قلقلة)",
-    desc_en: "Bouncing or echoing sound when these letters have Sukun.",
-    desc_ta: "சுகூன் பெற்ற நிலையில் இந்த எழுத்துக்கள் வரும்போது ஒலி எதிரொலித்தல்.",
-    example: "ق , ط , ب , ج , د"
-  },
-  {
-    category: "General Rules",
-    title: "Ghunnah (غنة)",
-    desc_en: "A nasal sound produced from the nose for 2 counts for Mushaddad Noon and Meem.",
-    desc_ta: "நூன் மற்றும் மீம் ஷத்தா பெற்று வரும்போது மூக்கிலிருந்து வெளிப்படும் 2 மாத்திரை அளவு ஒலி.",
-    example: "نّ , مّ"
+    category: "Makharij",
+    title: "Al-Lisaan (The Tongue)",
+    desc_en: "The tongue has 18 letters emerging from 10 different points. Crucial for clear speech.",
+    desc_ta: "நாவிலிருந்து 18 எழுத்துக்கள் பிறக்கின்றன. இது தெளிவான ஓதுதலுக்கு மிக முக்கியமானது.",
+    tip_en: "Notice if the tip, middle, or back of your tongue is touching the palate.",
+    tip_ta: "நாவின் நுனி, நடு அல்லது பின்பகுதி அண்ணத்தைத் தொடுகிறதா என்பதை கவனிக்கவும்.",
+    example: "ق ك ج ش ي ض ل ن ر ط د ت ص ز س ظ ذ ث"
   }
 ];
 
@@ -107,10 +89,12 @@ const TajweedTips: React.FC = () => {
     setAiResponse(null);
     try {
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || "" });
-      const prompt = `Explain the Tajweed rule or concept: "${searchQuery}". 
-      Provide a concise explanation in English and Tamil. 
-      Include examples from the Quran. 
-      Format clearly with headings.`;
+      const prompt = `You are an expert Quran Teacher. Explain the Tajweed rule or concept: "${searchQuery}". 
+      Include: 
+      1. Technical Definition (EN & TA)
+      2. Practical "How to do it" steps (EN & TA)
+      3. Quranic examples.
+      Keep the formatting very clean and easy to read on mobile.`;
       
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
@@ -125,15 +109,19 @@ const TajweedTips: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="bg-indigo-600 p-8 rounded-[3rem] text-white shadow-xl relative overflow-hidden">
+    <div className="space-y-6 animate-in fade-in duration-500 pb-10">
+      {/* Hero Header */}
+      <div className="bg-slate-900 p-8 rounded-[3rem] text-white shadow-xl relative overflow-hidden">
         <div className="absolute top-0 right-0 p-4 opacity-10 text-8xl rotate-12">✨</div>
         <div className="relative z-10">
-          <h2 className="text-3xl font-black mb-2 italic tracking-tight">Tajweed Handbook</h2>
-          <p className="text-indigo-100 text-xs font-medium max-w-xs leading-relaxed">
-            "Recite the Quran with measured recitation (Tartil)" 
-            <span className="block mt-1 opacity-60">— Surah Al-Muzzammil</span>
-          </p>
+          <h2 className="text-2xl font-black mb-1 italic tracking-tight">Recitation Science</h2>
+          <p className="text-emerald-400 text-[10px] font-black uppercase tracking-widest mb-4">Tajweed & Tartil Guide</p>
+          <div className="bg-white/5 border border-white/10 p-4 rounded-2xl flex items-center gap-4">
+            <span className="text-3xl">🎙️</span>
+            <p className="text-[10px] text-slate-400 leading-relaxed italic">
+              "Tajweed is giving every letter its right and its due."
+            </p>
+          </div>
         </div>
       </div>
 
@@ -142,33 +130,33 @@ const TajweedTips: React.FC = () => {
         <div className="relative group">
           <input 
             type="text"
-            placeholder="Ask AI about any Tajweed rule..."
+            placeholder="Ask AI teacher about any rule..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleAskAI()}
-            className="w-full bg-white border border-slate-200 rounded-3xl py-4 pl-6 pr-24 text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm"
+            className="w-full bg-white border border-slate-200 rounded-2xl py-3 pl-6 pr-24 text-xs outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all shadow-sm"
           />
           <button 
             onClick={handleAskAI}
             disabled={isAsking}
-            className="absolute right-2 top-2 bottom-2 bg-indigo-600 text-white px-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-colors disabled:opacity-50"
+            className="absolute right-1.5 top-1.5 bottom-1.5 bg-indigo-600 text-white px-4 rounded-xl text-[8px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-colors disabled:opacity-50"
           >
             {isAsking ? '...' : 'Ask AI'}
           </button>
         </div>
 
         {aiResponse && (
-          <div className="bg-indigo-50 border border-indigo-100 p-6 rounded-[2rem] animate-in zoom-in duration-300 relative">
+          <div className="bg-white border border-indigo-100 p-6 rounded-[2rem] animate-in zoom-in duration-300 relative shadow-xl">
             <button 
               onClick={() => setAiResponse(null)}
-              className="absolute top-4 right-4 text-indigo-300 hover:text-indigo-600"
+              className="absolute top-4 right-4 text-slate-300 hover:text-slate-600 p-2"
             >✕</button>
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-xl">🎓</span>
-              <h4 className="text-[10px] font-black text-indigo-900 uppercase tracking-widest">AI Expert Explanation</h4>
+            <div className="flex items-center gap-2 mb-4">
+              <span className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-white text-xs">🎓</span>
+              <h4 className="text-[9px] font-black text-indigo-900 uppercase tracking-widest">AI Expert Breakdown</h4>
             </div>
-            <div className="prose prose-sm prose-indigo">
-              <div className="text-xs text-slate-700 leading-relaxed whitespace-pre-wrap font-medium">
+            <div className="prose prose-sm prose-indigo max-h-[400px] overflow-y-auto scrollbar-hide">
+              <div className="text-[11px] text-slate-700 leading-relaxed whitespace-pre-wrap font-medium">
                 {aiResponse}
               </div>
             </div>
@@ -177,15 +165,15 @@ const TajweedTips: React.FC = () => {
       </div>
 
       {/* Categories Tabs */}
-      <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+      <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide px-1">
         {categories.map(cat => (
           <button
             key={cat}
             onClick={() => setActiveCategory(cat)}
-            className={`px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap border ${
+            className={`px-5 py-2 rounded-full text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap border ${
               activeCategory === cat 
-                ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg' 
-                : 'bg-white border-slate-100 text-slate-500 hover:border-indigo-200'
+                ? 'bg-indigo-600 border-indigo-600 text-white shadow-md' 
+                : 'bg-white border-slate-200 text-slate-500'
             }`}
           >
             {cat}
@@ -193,54 +181,54 @@ const TajweedTips: React.FC = () => {
         ))}
       </div>
 
+      {/* Rules Grid */}
       <div className="grid grid-cols-1 gap-4">
         {filteredRules.length > 0 ? (
           filteredRules.map((rule, idx) => (
-            <div key={idx} className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-md transition-all group">
-              <div className="flex justify-between items-start mb-4">
+            <div key={idx} className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-lg transition-all group overflow-hidden relative">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-slate-50 rounded-full -mr-12 -mt-12 group-hover:bg-indigo-50 transition-colors"></div>
+              
+              <div className="flex justify-between items-start mb-5 relative z-10">
                 <div>
-                  <span className="text-[8px] font-black text-indigo-400 uppercase tracking-[0.2em] mb-1 block">
+                  <span className="text-[8px] font-black text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded uppercase tracking-[0.1em] mb-2 block w-max">
                     {rule.category}
                   </span>
                   <h3 className="font-black text-lg text-slate-800 tracking-tight">{rule.title}</h3>
                 </div>
-                <div className="bg-indigo-50 px-4 py-2 rounded-2xl">
-                  <span className="quran-font text-2xl text-indigo-700">{rule.example}</span>
+                <div className="bg-white border border-slate-100 px-4 py-2 rounded-2xl shadow-sm">
+                  <span className="font-uthmani text-2xl text-indigo-700">{rule.example}</span>
                 </div>
               </div>
-              <div className="space-y-4">
-                <div className="flex gap-3">
-                  <div className="w-1.5 h-auto bg-slate-100 rounded-full shrink-0"></div>
-                  <p className="text-xs text-slate-600 leading-relaxed font-medium">
+
+              <div className="space-y-4 relative z-10">
+                <div className="p-4 bg-slate-50/50 rounded-2xl border border-slate-100">
+                  <p className="text-[11px] text-slate-700 leading-relaxed font-semibold mb-3">
                     {rule.desc_en}
                   </p>
-                </div>
-                <div className="flex gap-3">
-                  <div className="w-1.5 h-auto bg-indigo-200 rounded-full shrink-0"></div>
-                  <p className="text-xs text-indigo-700 tamil-font leading-relaxed font-bold italic">
+                  <p className="text-[11px] text-indigo-700 tamil-font leading-relaxed font-bold italic">
                     {rule.desc_ta}
                   </p>
+                </div>
+
+                <div className="grid grid-cols-1 gap-2 border-t border-slate-100 pt-4">
+                  <div className="flex items-center gap-3">
+                    <span className="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center text-[10px]">💡</span>
+                    <p className="text-[10px] text-slate-500 font-medium italic">{rule.tip_en}</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="w-6 h-6 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-[10px]">📍</span>
+                    <p className="text-[10px] text-emerald-700 tamil-font font-bold">{rule.tip_ta}</p>
+                  </div>
                 </div>
               </div>
             </div>
           ))
         ) : (
           <div className="text-center py-20 bg-white rounded-[3rem] border border-dashed border-slate-200">
-             <p className="text-4xl mb-4">📖</p>
-             <p className="text-slate-400 text-sm font-medium italic">No rules found in this category.</p>
+             <p className="text-4xl mb-4 grayscale opacity-20">📖</p>
+             <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">No matching rules</p>
           </div>
         )}
-      </div>
-      
-      <div className="bg-slate-900 text-white p-8 rounded-[3rem] shadow-xl relative overflow-hidden">
-        <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-indigo-500/10 rounded-full"></div>
-        <h4 className="font-black mb-3 text-indigo-400 uppercase text-[10px] tracking-widest flex items-center gap-2">
-          <span>🧠</span> Pro Tip for Hifz
-        </h4>
-        <p className="text-xs text-slate-400 leading-relaxed relative z-10">
-          Reciting with proper Tajweed makes memorization significantly easier as the rules create mental anchors and rhythmic patterns. 
-          The Quran was revealed with these sounds—learning them is learning its heart.
-        </p>
       </div>
     </div>
   );
