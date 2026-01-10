@@ -32,6 +32,16 @@ const App: React.FC = () => {
     return saved === null ? true : saved === 'true';
   });
 
+  const [showEnglish, setShowEnglish] = useState<boolean>(() => {
+    const saved = localStorage.getItem('show-english');
+    return saved === null ? true : saved === 'true';
+  });
+
+  const [showTamil, setShowTamil] = useState<boolean>(() => {
+    const saved = localStorage.getItem('show-tamil');
+    return saved === null ? true : saved === 'true';
+  });
+
   const [quranScript, setQuranScript] = useState<QuranScript>(() => {
     const saved = localStorage.getItem('quran-script');
     return (saved as QuranScript) || 'uthmani';
@@ -74,7 +84,9 @@ const App: React.FC = () => {
     localStorage.setItem('mushaf-mode', mushafMode.toString());
     localStorage.setItem('show-wbw', showWordByWord.toString());
     localStorage.setItem('show-tajweed', showTajweed.toString());
-  }, [quranScript, arabicFontSize, englishFontSize, tamilFontSize, mushafMode, showWordByWord, showTajweed]);
+    localStorage.setItem('show-english', showEnglish.toString());
+    localStorage.setItem('show-tamil', showTamil.toString());
+  }, [quranScript, arabicFontSize, englishFontSize, tamilFontSize, mushafMode, showWordByWord, showTajweed, showEnglish, showTamil]);
 
   const handleDeepSearch = async (queryOverride?: string) => {
     const queryToUse = queryOverride !== undefined ? queryOverride : searchQuery;
@@ -328,6 +340,8 @@ const App: React.FC = () => {
           mushafMode={mushafMode}
           showWordByWord={showWordByWord}
           showTajweed={showTajweed}
+          showEnglish={showEnglish}
+          showTamil={showTamil}
           onBack={() => {
             setSelectedSurahId(null);
             setActiveView('surah-list');
@@ -350,6 +364,8 @@ const App: React.FC = () => {
             mushafMode={mushafMode} setMushafMode={setMushafMode}
             showWordByWord={showWordByWord} setShowWordByWord={setShowWordByWord}
             showTajweed={showTajweed} setShowTajweed={setShowTajweed}
+            showEnglish={showEnglish} setShowEnglish={setShowEnglish}
+            showTamil={showTamil} setShowTamil={setShowTamil}
             quranScript={quranScript} setQuranScript={setQuranScript}
             arabicFontSize={arabicFontSize} setArabicFontSize={setArabicFontSize}
             englishFontSize={englishFontSize} setEnglishFontSize={setEnglishFontSize}

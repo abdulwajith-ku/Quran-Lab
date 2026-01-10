@@ -9,6 +9,10 @@ interface SettingsProps {
   setShowWordByWord: (v: boolean) => void;
   showTajweed: boolean;
   setShowTajweed: (v: boolean) => void;
+  showEnglish: boolean;
+  setShowEnglish: (v: boolean) => void;
+  showTamil: boolean;
+  setShowTamil: (v: boolean) => void;
   quranScript: QuranScript;
   setQuranScript: (v: QuranScript) => void;
   arabicFontSize: FontSize;
@@ -23,6 +27,8 @@ const Settings: React.FC<SettingsProps> = ({
   mushafMode, setMushafMode,
   showWordByWord, setShowWordByWord,
   showTajweed, setShowTajweed,
+  showEnglish, setShowEnglish,
+  showTamil, setShowTamil,
   quranScript, setQuranScript,
   arabicFontSize, setArabicFontSize,
   englishFontSize, setEnglishFontSize,
@@ -30,7 +36,6 @@ const Settings: React.FC<SettingsProps> = ({
 }) => {
   const fontSizes: FontSize[] = ['sm', 'md', 'lg', 'xl'];
 
-  // Fix: Made children optional to ensure TypeScript correctly handles component usage with nested JSX elements.
   const SettingSection = ({ title, icon, children }: { title: string, icon: string, children?: React.ReactNode }) => (
     <div className="bg-white border border-slate-100 rounded-[2.5rem] p-6 shadow-sm space-y-4">
       <div className="flex items-center gap-3 mb-2">
@@ -42,41 +47,53 @@ const Settings: React.FC<SettingsProps> = ({
   );
 
   const Toggle = ({ label, desc, value, onChange }: { label: string, desc: string, value: boolean, onChange: (v: boolean) => void }) => (
-    <div className="flex items-center justify-between py-2">
+    <div className="flex items-center justify-between py-2 group cursor-pointer" onClick={() => onChange(!value)}>
       <div className="flex-1">
-        <h4 className="text-sm font-bold text-slate-800">{label}</h4>
+        <h4 className="text-sm font-bold text-slate-800 transition-colors group-hover:text-emerald-700">{label}</h4>
         <p className="text-[10px] text-slate-400 font-medium">{desc}</p>
       </div>
       <button 
-        onClick={() => onChange(!value)}
-        className={`w-12 h-6 rounded-full transition-all relative ${value ? 'bg-emerald-600' : 'bg-slate-200'}`}
+        className={`w-12 h-6 rounded-full transition-all relative pointer-events-none ${value ? 'bg-emerald-600 shadow-inner' : 'bg-slate-200'}`}
       >
-        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${value ? 'left-7' : 'left-1'}`}></div>
+        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-all ${value ? 'left-7' : 'left-1'}`}></div>
       </button>
     </div>
   );
 
-  const SizePicker = ({ label, value, onChange, color }: { label: string, value: FontSize, onChange: (v: FontSize) => void, color: string }) => (
-    <div className="space-y-2">
-      <div className="flex justify-between items-center">
-        <span className="text-[10px] font-black text-slate-500 uppercase">{label}</span>
-        <span className={`text-[10px] font-black text-${color}-600 uppercase`}>{value}</span>
+  const SizePicker = ({ label, value, onChange, theme }: { label: string, value: FontSize, onChange: (v: FontSize) => void, theme: 'emerald' | 'slate' | 'indigo' }) => {
+    const activeColors = {
+      emerald: 'bg-emerald-600 text-white',
+      slate: 'bg-slate-600 text-white',
+      indigo: 'bg-indigo-600 text-white'
+    };
+    const labelColors = {
+      emerald: 'text-emerald-600',
+      slate: 'text-slate-600',
+      indigo: 'text-indigo-600'
+    };
+
+    return (
+      <div className="space-y-2">
+        <div className="flex justify-between items-center">
+          <span className="text-[10px] font-black text-slate-500 uppercase">{label}</span>
+          <span className={`text-[10px] font-black uppercase ${labelColors[theme]}`}>{value}</span>
+        </div>
+        <div className="bg-slate-50 p-1 rounded-xl flex gap-1 border border-slate-100 shadow-inner">
+          {fontSizes.map(size => (
+            <button
+              key={size}
+              onClick={() => onChange(size)}
+              className={`flex-1 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all ${
+                value === size ? activeColors[theme] + ' shadow-md' : 'text-slate-400 hover:text-slate-600'
+              }`}
+            >
+              {size}
+            </button>
+          ))}
+        </div>
       </div>
-      <div className="bg-slate-50 p-1 rounded-xl flex gap-1 border border-slate-100 shadow-inner">
-        {fontSizes.map(size => (
-          <button
-            key={size}
-            onClick={() => onChange(size)}
-            className={`flex-1 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all ${
-              value === size ? `bg-${color}-600 text-white shadow-md` : 'text-slate-400 hover:text-slate-600'
-            }`}
-          >
-            {size}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-10">
@@ -98,7 +115,7 @@ const Settings: React.FC<SettingsProps> = ({
         <div className="h-[1px] bg-slate-50 w-full"></div>
         <Toggle 
           label="Word-By-Word" 
-          desc="Show Tamil/English meanings per word" 
+          desc="Show meanings per word" 
           value={showWordByWord} 
           onChange={setShowWordByWord} 
         />
@@ -109,12 +126,26 @@ const Settings: React.FC<SettingsProps> = ({
           value={showTajweed} 
           onChange={setShowTajweed} 
         />
+        <div className="h-[1px] bg-slate-50 w-full"></div>
+        <Toggle 
+          label="English Translation" 
+          desc="Show Sahih International English translation" 
+          value={showEnglish} 
+          onChange={setShowEnglish} 
+        />
+        <div className="h-[1px] bg-slate-50 w-full"></div>
+        <Toggle 
+          label="Tamil Translation" 
+          desc="Show John Trusty Tamil translation" 
+          value={showTamil} 
+          onChange={setShowTamil} 
+        />
       </SettingSection>
 
       <SettingSection title="Typography Control" icon="✍️">
-        <SizePicker label="Arabic Font Size" value={arabicFontSize} onChange={setArabicFontSize} color="emerald" />
-        <SizePicker label="English Font Size" value={englishFontSize} onChange={setEnglishFontSize} color="slate" />
-        <SizePicker label="Tamil Font Size" value={tamilFontSize} onChange={setTamilFontSize} color="indigo" />
+        <SizePicker label="Arabic Font Size" value={arabicFontSize} onChange={setArabicFontSize} theme="emerald" />
+        <SizePicker label="English Font Size" value={englishFontSize} onChange={setEnglishFontSize} theme="slate" />
+        <SizePicker label="Tamil Font Size" value={tamilFontSize} onChange={setTamilFontSize} theme="indigo" />
       </SettingSection>
 
       <SettingSection title="Script Style" icon="📜">

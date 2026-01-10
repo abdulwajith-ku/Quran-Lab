@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Surah, Ayah, Word, TajweedRule, QuranScript, FontSize } from '../types';
 import { fetchSurahData, getWordByWordTranslation, getAyahTajweedRules } from '../services/quranService';
 import { getHifzTips } from '../services/geminiService';
@@ -17,6 +17,8 @@ interface AyahReaderProps {
   mushafMode: boolean;
   showWordByWord: boolean;
   showTajweed: boolean;
+  showEnglish: boolean;
+  showTamil: boolean;
   onBack: () => void;
   isAyahMemorized: (surahId: number, ayahNum: number) => boolean;
   isAyahRecited: (surahId: number, ayahNum: number) => boolean;
@@ -31,6 +33,7 @@ const AyahReader: React.FC<AyahReaderProps> = ({
   englishFontSize, setEnglishFontSize, 
   tamilFontSize, setTamilFontSize,
   mushafMode, showWordByWord, showTajweed,
+  showEnglish, showTamil,
   onBack, isAyahMemorized, isAyahRecited, toggleStatus 
 }) => {
   const [surah, setSurah] = useState<Surah | null>(null);
@@ -49,6 +52,7 @@ const AyahReader: React.FC<AyahReaderProps> = ({
   const [loadingInsights, setLoadingInsights] = useState(false);
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -65,8 +69,64 @@ const AyahReader: React.FC<AyahReaderProps> = ({
     loadData();
     return () => {
       if (audioRef.current) audioRef.current.pause();
+      if (observerRef.current) observerRef.current.disconnect();
     };
   }, [surahId]);
+
+  const loadWbw = useCallback(async (ayah: Ayah) => {
+    if ((wbwData[ayah.number] && wbwData[ayah.number].length > 0) || loadingWbw[ayah.number]) return;
+    setLoadingWbw(prev => ({ ...prev, [ayah.number]: true }));
+    try {
+      const words = await getWordByWordTranslation(ayah.text);
+      if (words && words.length > 0) {
+        setWbwData(prev => ({ ...prev, [ayah.number]: words }));
+      }
+    } catch (err) {
+      console.warn("WBW Load throttled", err);
+    } finally {
+      setLoadingWbw(prev => ({ ...prev, [ayah.number]: false }));
+    }
+  }, [wbwData, loadingWbw]);
+
+  const loadTajweed = useCallback(async (ayah: Ayah) => {
+    if ((tajweedData[ayah.number] && tajweedData[ayah.number].length > 0) || loadingTajweed[ayah.number]) return;
+    setLoadingTajweed(prev => ({ ...prev, [ayah.number]: true }));
+    try {
+      const rules = await getAyahTajweedRules(ayah.text);
+      if (rules && rules.length > 0) {
+        setTajweedData(prev => ({ ...prev, [ayah.number]: rules }));
+      }
+    } catch (err) {
+      console.warn("Tajweed Load throttled", err);
+    } finally {
+      setLoadingTajweed(prev => ({ ...prev, [ayah.number]: false }));
+    }
+  }, [tajweedData, loadingTajweed]);
+
+  useEffect(() => {
+    if (loading || !surah || mushafMode) return;
+
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const ayahNum = parseInt(entry.target.getAttribute('data-ayah-num') || '0');
+            const ayah = surah.ayahs.find(a => a.number === ayahNum);
+            if (ayah) {
+              if (showWordByWord) loadWbw(ayah);
+              if (showTajweed) loadTajweed(ayah);
+            }
+          }
+        });
+      },
+      { threshold: 0.1 }
+    );
+
+    const ayahElements = document.querySelectorAll('.ayah-container');
+    ayahElements.forEach((el) => observerRef.current?.observe(el));
+
+    return () => observerRef.current?.disconnect();
+  }, [loading, surah, showWordByWord, showTajweed, mushafMode, loadWbw, loadTajweed]);
 
   const fetchInsights = async () => {
     if (insights || loadingInsights || !surah) return;
@@ -80,40 +140,6 @@ const AyahReader: React.FC<AyahReaderProps> = ({
       setTimeout(() => setErrorMessage(null), 5000);
     } finally {
       setLoadingInsights(false);
-    }
-  };
-
-  const loadWbw = async (ayah: Ayah) => {
-    if ((wbwData[ayah.number] && wbwData[ayah.number].length > 0) || loadingWbw[ayah.number]) return;
-    setLoadingWbw(prev => ({ ...prev, [ayah.number]: true }));
-    setErrorMessage(null);
-    try {
-      const words = await getWordByWordTranslation(ayah.text);
-      if (words && words.length > 0) {
-        setWbwData(prev => ({ ...prev, [ayah.number]: words }));
-      }
-    } catch (err) {
-      setErrorMessage("Quota limit hit. Gemini is resting...");
-      setTimeout(() => setErrorMessage(null), 8000);
-    } finally {
-      setLoadingWbw(prev => ({ ...prev, [ayah.number]: false }));
-    }
-  };
-
-  const loadTajweed = async (ayah: Ayah) => {
-    if ((tajweedData[ayah.number] && tajweedData[ayah.number].length > 0) || loadingTajweed[ayah.number]) return;
-    setLoadingTajweed(prev => ({ ...prev, [ayah.number]: true }));
-    setErrorMessage(null);
-    try {
-      const rules = await getAyahTajweedRules(ayah.text);
-      if (rules && rules.length > 0) {
-        setTajweedData(prev => ({ ...prev, [ayah.number]: rules }));
-      }
-    } catch (err) {
-      setErrorMessage("Tajweed analysis quota limited. Try again in 10s.");
-      setTimeout(() => setErrorMessage(null), 8000);
-    } finally {
-      setLoadingTajweed(prev => ({ ...prev, [ayah.number]: false }));
     }
   };
 
@@ -323,7 +349,8 @@ const AyahReader: React.FC<AyahReaderProps> = ({
             <div 
               key={ayah.number} 
               id={`ayah-${ayah.number}`}
-              className={`bg-white border transition-all duration-500 rounded-[2rem] p-5 shadow-sm hover:shadow-md ${
+              data-ayah-num={ayah.number}
+              className={`ayah-container bg-white border transition-all duration-500 rounded-[2rem] p-5 shadow-sm hover:shadow-md ${
                 playingAyah === ayah.number ? 'ring-2 ring-emerald-500 bg-emerald-50/10' : 'border-slate-100'
               }`}
             >
@@ -396,23 +423,20 @@ const AyahReader: React.FC<AyahReaderProps> = ({
               {showWordByWord && (
                 <div className="mb-6">
                   {hasWbw ? (
-                    <div className="flex flex-wrap flex-row-reverse gap-3 bg-slate-50/50 p-4 rounded-2xl border border-slate-100 animate-in fade-in">
+                    <div className="flex flex-row-reverse gap-3 bg-slate-50/50 p-4 rounded-2xl border border-slate-100 animate-in fade-in overflow-x-auto scrollbar-hide pb-6">
                       {wbwData[ayah.number].map((word, idx) => (
-                        <div key={idx} className="flex flex-col items-center bg-white p-2.5 rounded-xl border border-slate-100 shadow-sm min-w-[70px] text-center">
+                        <div key={idx} className="flex flex-col items-center bg-white p-2.5 rounded-xl border border-slate-100 shadow-sm min-w-[85px] text-center shrink-0">
                           <span className={`${arabicClass} text-lg text-emerald-900 mb-1`}>{word.arabic}</span>
-                          <span className={`${englishSizeClass} text-slate-400 font-black uppercase tracking-tighter mb-0.5 leading-none`}>{word.english}</span>
-                          <span className={`${tamilSizeClass} text-emerald-600 font-bold tamil-font italic leading-none`}>{word.tamil}</span>
+                          {showEnglish && <span className={`${englishSizeClass} text-slate-400 font-black uppercase tracking-tighter mb-0.5 leading-none`}>{word.english}</span>}
+                          {showTamil && <span className={`${tamilSizeClass} text-emerald-600 font-bold tamil-font italic leading-none`}>{word.tamil}</span>}
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <button 
-                      onClick={() => loadWbw(ayah)}
-                      disabled={loadingWbw[ayah.number]}
-                      className="w-full py-2 border-2 border-dashed border-emerald-100 rounded-xl text-emerald-600 text-[9px] font-black uppercase tracking-widest hover:bg-emerald-50 transition-all flex items-center justify-center gap-2"
-                    >
-                      {loadingWbw[ayah.number] ? <span className="w-3 h-3 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin"></span> : 'Load Word-By-Word ✨'}
-                    </button>
+                    <div className="w-full py-4 border-2 border-dashed border-emerald-100 rounded-xl flex items-center justify-center gap-3">
+                       <span className="w-4 h-4 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin"></span>
+                       <span className="text-emerald-600 text-[9px] font-black uppercase tracking-widest">Loading Word-By-Word...</span>
+                    </div>
                   )}
                 </div>
               )}
@@ -425,40 +449,41 @@ const AyahReader: React.FC<AyahReaderProps> = ({
                         <span className="text-base">💎</span>
                         <h4 className="text-[8px] font-black text-indigo-900 uppercase tracking-widest">Tajweed & Tartil</h4>
                       </div>
-                      <div className="space-y-3">
+                      <div className="max-h-56 overflow-y-auto pr-1 space-y-3 custom-scrollbar">
                         {tajweedData[ayah.number].map((rule, idx) => (
                           <div key={idx} className="bg-white p-3 rounded-xl border border-indigo-50 shadow-sm">
                             <div className="flex justify-between items-center mb-1">
                               <span className="px-2 py-0.5 bg-indigo-600 text-white text-[8px] font-black rounded uppercase">{rule.rule}</span>
                               <span className={`${arabicClass} text-[10px] text-indigo-900 font-bold`}>{rule.location}</span>
                             </div>
-                            <p className={`${englishSizeClass} text-slate-600 leading-tight mb-1 font-medium italic`}>{rule.explanation_en}</p>
-                            <p className={`${tamilSizeClass} text-indigo-700 tamil-font leading-tight italic`}>{rule.explanation_ta}</p>
+                            {showEnglish && <p className={`${englishSizeClass} text-slate-600 leading-tight mb-1 font-medium italic`}>{rule.explanation_en}</p>}
+                            {showTamil && <p className={`${tamilSizeClass} text-indigo-700 tamil-font leading-tight italic`}>{rule.explanation_ta}</p>}
                           </div>
                         ))}
                       </div>
                     </div>
                   ) : (
-                    <button 
-                      onClick={() => loadTajweed(ayah)}
-                      disabled={loadingTajweed[ayah.number]}
-                      className="w-full py-2 bg-indigo-50 text-indigo-700 rounded-xl text-[9px] font-black uppercase tracking-widest border border-indigo-100 hover:bg-indigo-100 transition-all flex items-center justify-center gap-2"
-                    >
-                      {loadingTajweed[ayah.number] ? <span className="w-3 h-3 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></span> : 'Load Tajweed Guide 💎'}
-                    </button>
+                    <div className="w-full py-4 bg-indigo-50 rounded-xl flex items-center justify-center gap-3 border border-indigo-100">
+                       <span className="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></span>
+                       <span className="text-indigo-700 text-[9px] font-black uppercase tracking-widest">Analyzing Tajweed...</span>
+                    </div>
                   )}
                 </div>
               )}
 
               <div className="space-y-4 pt-6 border-t border-slate-100">
-                <div className="flex gap-3">
-                  <span className="text-[8px] font-black text-slate-300 uppercase mt-1 w-4 shrink-0">EN</span>
-                  <p className={`${englishSizeClass} text-slate-600 leading-relaxed font-medium italic`}>{ayah.translation_en}</p>
-                </div>
-                <div className="flex gap-3">
-                  <span className="text-[8px] font-black text-emerald-200 uppercase mt-1 w-4 shrink-0">TA</span>
-                  <p className={`${tamilSizeClass} text-slate-500 tamil-font leading-relaxed font-medium`}>{ayah.translation_ta}</p>
-                </div>
+                {showEnglish && (
+                  <div className="flex gap-3">
+                    <span className="text-[8px] font-black text-slate-300 uppercase mt-1 w-4 shrink-0">EN</span>
+                    <p className={`${englishSizeClass} text-slate-600 leading-relaxed font-medium italic`}>{ayah.translation_en}</p>
+                  </div>
+                )}
+                {showTamil && (
+                  <div className="flex gap-3">
+                    <span className="text-[8px] font-black text-emerald-200 uppercase mt-1 w-4 shrink-0">TA</span>
+                    <p className={`${tamilSizeClass} text-slate-500 tamil-font leading-relaxed font-medium`}>{ayah.translation_ta}</p>
+                  </div>
+                )}
               </div>
             </div>
           );

@@ -7,13 +7,12 @@ const BISMILLAH_ALT = "بِسْمِ اللَّهِ الرَّحْمَٰنِ ال
 
 /**
  * Global Serial Queue to prevent concurrent Gemini API calls.
- * Free tier quotas are extremely limited (often 2-15 RPM).
- * We increase the interval to 10 seconds to ensure stability.
+ * Adjusted to 5 seconds for a "faster response" feel while staying safe.
  */
 class GeminiQueue {
   private queue: Promise<any> = Promise.resolve();
   private lastRequestTime: number = 0;
-  private minInterval: number = 10000; // 10 seconds between requests to stay safe
+  private minInterval: number = 5000; // 5 seconds between requests
 
   async enqueue<T>(task: () => Promise<T>): Promise<T> {
     this.queue = this.queue.then(async () => {
@@ -29,8 +28,8 @@ class GeminiQueue {
         this.lastRequestTime = Date.now();
         return result;
       } catch (error) {
-        // If we hit a rate limit, force a longer wait for the next person in queue
-        this.lastRequestTime = Date.now() + 5000; 
+        // Longer wait on error
+        this.lastRequestTime = Date.now() + 3000; 
         throw error;
       }
     });
@@ -40,10 +39,7 @@ class GeminiQueue {
 
 const geminiQueue = new GeminiQueue();
 
-/**
- * Enhanced retry wrapper with aggressive backoff for 429 errors.
- */
-const withRetry = async <T>(fn: () => Promise<T>, retries = 3, delay = 12000): Promise<T> => {
+const withRetry = async <T>(fn: () => Promise<T>, retries = 3, delay = 8000): Promise<T> => {
   try {
     return await fn();
   } catch (error: any) {
@@ -62,7 +58,7 @@ const withRetry = async <T>(fn: () => Promise<T>, retries = 3, delay = 12000): P
   }
 };
 
-export const paceRequest = (ms = 2000) => new Promise(resolve => setTimeout(resolve, ms));
+export const paceRequest = (ms = 1000) => new Promise(resolve => setTimeout(resolve, ms));
 
 export const fetchSurahData = async (surahId: number): Promise<Surah> => {
   const response = await fetch(`https://api.alquran.cloud/v1/surah/${surahId}/editions/quran-uthmani,en.sahih,ta.tamil`);
