@@ -52,6 +52,7 @@ const AyahReader: React.FC<AyahReaderProps> = ({
   const [loadingInsights, setLoadingInsights] = useState(false);
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const playPromiseRef = useRef<Promise<void> | null>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
 
   useEffect(() => {
@@ -68,7 +69,10 @@ const AyahReader: React.FC<AyahReaderProps> = ({
     };
     loadData();
     return () => {
-      if (audioRef.current) audioRef.current.pause();
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = "";
+      }
       if (observerRef.current) observerRef.current.disconnect();
     };
   }, [surahId]);
@@ -103,6 +107,37 @@ const AyahReader: React.FC<AyahReaderProps> = ({
     }
   }, [tajweedData, loadingTajweed]);
 
+  /**
+   * Proactive visible data trigger.
+   * Ensures visible content is loaded immediately when settings are toggled ON.
+   */
+  const triggerVisibleLoad = useCallback(() => {
+    if (loading || !surah || mushafMode) return;
+    
+    const ayahElements = document.querySelectorAll('.ayah-container');
+    const viewportHeight = window.innerHeight;
+
+    ayahElements.forEach((el) => {
+      const rect = el.getBoundingClientRect();
+      const isVisible = (rect.top >= 0 && rect.top <= viewportHeight) || (rect.bottom >= 0 && rect.bottom <= viewportHeight);
+      
+      if (isVisible) {
+        const ayahNum = parseInt(el.getAttribute('data-ayah-num') || '0');
+        const ayah = surah.ayahs.find(a => a.number === ayahNum);
+        if (ayah) {
+          if (showWordByWord) loadWbw(ayah);
+          if (showTajweed) loadTajweed(ayah);
+        }
+      }
+    });
+  }, [loading, surah, mushafMode, showWordByWord, showTajweed, loadWbw, loadTajweed]);
+
+  // Initial and Toggle trigger
+  useEffect(() => {
+    triggerVisibleLoad();
+  }, [showWordByWord, showTajweed, triggerVisibleLoad]);
+
+  // Observer for scroll trigger
   useEffect(() => {
     if (loading || !surah || mushafMode) return;
 
@@ -149,20 +184,41 @@ const AyahReader: React.FC<AyahReaderProps> = ({
     return `https://everyayah.com/data/Alafasy_128kbps/${sPadded}${aPadded}.mp3`;
   };
 
-  const playAyahAudio = (ayahNum: number) => {
+  const playAyahAudio = async (ayahNum: number) => {
     if (playingAyah === ayahNum) {
-      if (audioRef.current) audioRef.current.pause();
+      if (audioRef.current) {
+        if (playPromiseRef.current) await playPromiseRef.current.catch(() => {});
+        audioRef.current.pause();
+      }
       setPlayingAyah(null);
       return;
     }
-    if (audioRef.current) audioRef.current.pause();
+
+    if (audioRef.current) {
+      if (playPromiseRef.current) await playPromiseRef.current.catch(() => {});
+      audioRef.current.pause();
+    }
+
     const audioUrl = getAudioUrl(surahId, ayahNum);
     const audio = new Audio(audioUrl);
     audio.playbackRate = playbackSpeed;
     audioRef.current = audio;
+    
     setPlayingAyah(ayahNum);
-    audio.play();
-    audio.onended = () => setPlayingAyah(null);
+    
+    const playPromise = audio.play();
+    playPromiseRef.current = playPromise;
+    
+    playPromise.catch(error => {
+      if (error.name !== 'AbortError') {
+        console.error("Playback error:", error);
+      }
+    });
+
+    audio.onended = () => {
+      setPlayingAyah(null);
+      playPromiseRef.current = null;
+    };
   };
 
   const handleCopy = (ayah: Ayah) => {

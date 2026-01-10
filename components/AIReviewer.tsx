@@ -27,6 +27,7 @@ const AIReviewer: React.FC<AIReviewerProps> = ({ script = 'uthmani', fontSize = 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const historyAudioRef = useRef<HTMLAudioElement | null>(null);
+  const playPromiseRef = useRef<Promise<void> | null>(null);
 
   const arabicClass = script === 'uthmani' ? 'font-uthmani' : 'font-indopak';
   
@@ -136,18 +137,38 @@ const AIReviewer: React.FC<AIReviewerProps> = ({ script = 'uthmani', fontSize = 
     setIsRecording(false);
   };
 
-  const playHistoryAudio = (base64: string, id: string) => {
+  const playHistoryAudio = async (base64: string, id: string) => {
     if (playingHistoryId === id) {
-      historyAudioRef.current?.pause();
+      if (historyAudioRef.current) {
+        if (playPromiseRef.current) await playPromiseRef.current.catch(() => {});
+        historyAudioRef.current.pause();
+      }
       setPlayingHistoryId(null);
       return;
     }
-    if (historyAudioRef.current) historyAudioRef.current.pause();
+
+    if (historyAudioRef.current) {
+      if (playPromiseRef.current) await playPromiseRef.current.catch(() => {});
+      historyAudioRef.current.pause();
+    }
+
     const audio = new Audio(`data:audio/webm;base64,${base64}`);
     historyAudioRef.current = audio;
     setPlayingHistoryId(id);
-    audio.play();
-    audio.onended = () => setPlayingHistoryId(null);
+    
+    const playPromise = audio.play();
+    playPromiseRef.current = playPromise;
+
+    playPromise.catch(error => {
+      if (error.name !== 'AbortError') {
+        console.error("History playback error:", error);
+      }
+    });
+
+    audio.onended = () => {
+      setPlayingHistoryId(null);
+      playPromiseRef.current = null;
+    };
   };
 
   const selectedAyah = currentSurah?.ayahs.find(a => a.number === selectedAyahNum);

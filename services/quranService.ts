@@ -7,12 +7,12 @@ const BISMILLAH_ALT = "بِسْمِ اللَّهِ الرَّحْمَٰنِ ال
 
 /**
  * Global Serial Queue to prevent concurrent Gemini API calls.
- * Adjusted to 5 seconds for a "faster response" feel while staying safe.
+ * Optimized to 3 seconds for a snappier experience.
  */
 class GeminiQueue {
   private queue: Promise<any> = Promise.resolve();
   private lastRequestTime: number = 0;
-  private minInterval: number = 5000; // 5 seconds between requests
+  private minInterval: number = 3000; // 3 seconds between requests
 
   async enqueue<T>(task: () => Promise<T>): Promise<T> {
     this.queue = this.queue.then(async () => {
@@ -28,8 +28,8 @@ class GeminiQueue {
         this.lastRequestTime = Date.now();
         return result;
       } catch (error) {
-        // Longer wait on error
-        this.lastRequestTime = Date.now() + 3000; 
+        // Shorter block on error to allow faster recovery
+        this.lastRequestTime = Date.now() + 2000; 
         throw error;
       }
     });
@@ -39,7 +39,7 @@ class GeminiQueue {
 
 const geminiQueue = new GeminiQueue();
 
-const withRetry = async <T>(fn: () => Promise<T>, retries = 3, delay = 8000): Promise<T> => {
+const withRetry = async <T>(fn: () => Promise<T>, retries = 2, delay = 5000): Promise<T> => {
   try {
     return await fn();
   } catch (error: any) {
@@ -50,15 +50,12 @@ const withRetry = async <T>(fn: () => Promise<T>, retries = 3, delay = 8000): Pr
                         error.status === 'RESOURCE_EXHAUSTED';
     
     if (retries > 0 && isRateLimit) {
-      console.warn(`Gemini Rate Limit hit. Retrying in ${delay}ms...`);
       await new Promise(resolve => setTimeout(resolve, delay));
-      return withRetry(fn, retries - 1, delay * 2);
+      return withRetry(fn, retries - 1, delay * 1.5);
     }
     throw error;
   }
 };
-
-export const paceRequest = (ms = 1000) => new Promise(resolve => setTimeout(resolve, ms));
 
 export const fetchSurahData = async (surahId: number): Promise<Surah> => {
   const response = await fetch(`https://api.alquran.cloud/v1/surah/${surahId}/editions/quran-uthmani,en.sahih,ta.tamil`);

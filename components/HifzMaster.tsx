@@ -1,13 +1,11 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-// Fix: Use correct type name 'FontSize' as exported in types.ts
 import { Surah, Ayah, HifzMethod, QuranScript, FontSize } from '../types';
 import { fetchSurahData } from '../services/quranService';
 import { ALL_SURAH_NAMES } from '../data/quranData';
 
 interface HifzMasterProps {
   script: QuranScript;
-  // Fix: Use correct type name 'FontSize'
   fontSize: FontSize;
   setFontSize: (s: FontSize) => void;
 }
@@ -20,7 +18,6 @@ const HifzMaster: React.FC<HifzMasterProps> = ({ script, fontSize, setFontSize }
   const [loading, setLoading] = useState(false);
   const [playingAyah, setPlayingAyah] = useState<number | null>(null);
   
-  // Hifz Settings State
   const [hifzMethod, setHifzMethod] = useState<HifzMethod>('chain');
   const [hifzStart, setHifzStart] = useState(1);
   const [hifzEnd, setHifzEnd] = useState(7);
@@ -36,6 +33,7 @@ const HifzMaster: React.FC<HifzMasterProps> = ({ script, fontSize, setFontSize }
   
   const [uiState, setUiState] = useState(playbackStateRef.current);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const playPromiseRef = useRef<Promise<void> | null>(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -52,7 +50,9 @@ const HifzMaster: React.FC<HifzMasterProps> = ({ script, fontSize, setFontSize }
       }
     };
     loadData();
-    return () => stopPractice();
+    return () => {
+      stopPractice();
+    };
   }, [selectedSurahId]);
 
   const getAudioUrl = (sId: number, aNum: number) => {
@@ -61,8 +61,11 @@ const HifzMaster: React.FC<HifzMasterProps> = ({ script, fontSize, setFontSize }
     return `https://everyayah.com/data/Alafasy_128kbps/${sPadded}${aPadded}.mp3`;
   };
 
-  const playAyahAudio = (ayahNum: number) => {
+  const playAyahAudio = async (ayahNum: number) => {
     if (audioRef.current) {
+      if (playPromiseRef.current) {
+        await playPromiseRef.current.catch(() => {});
+      }
       audioRef.current.pause();
       audioRef.current.onended = null;
     }
@@ -73,7 +76,15 @@ const HifzMaster: React.FC<HifzMasterProps> = ({ script, fontSize, setFontSize }
     audioRef.current = audio;
     setPlayingAyah(ayahNum);
 
-    audio.play().catch(() => stopPractice());
+    const playPromise = audio.play();
+    playPromiseRef.current = playPromise;
+
+    playPromise.catch(error => {
+      if (error.name !== 'AbortError') {
+        console.error("Practice Playback error:", error);
+        stopPractice();
+      }
+    });
 
     audio.onended = () => {
       handleHifzProgression();
@@ -159,8 +170,11 @@ const HifzMaster: React.FC<HifzMasterProps> = ({ script, fontSize, setFontSize }
     playAyahAudio(hifzStart);
   };
 
-  const stopPractice = () => {
+  const stopPractice = async () => {
     if (audioRef.current) {
+      if (playPromiseRef.current) {
+        await playPromiseRef.current.catch(() => {});
+      }
       audioRef.current.pause();
       audioRef.current.onended = null;
     }
@@ -263,7 +277,6 @@ const HifzMaster: React.FC<HifzMasterProps> = ({ script, fontSize, setFontSize }
               </div>
 
               <div className="bg-white/5 p-1 rounded-2xl flex gap-1 border border-white/5">
-                {/* Fix: Use correct type name 'FontSize' */}
                 {(['sm', 'md', 'lg', 'xl'] as FontSize[]).map(size => (
                   <button 
                       key={size}

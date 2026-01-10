@@ -47,7 +47,10 @@ const Settings: React.FC<SettingsProps> = ({
   );
 
   const Toggle = ({ label, desc, value, onChange }: { label: string, desc: string, value: boolean, onChange: (v: boolean) => void }) => (
-    <div className="flex items-center justify-between py-2 group cursor-pointer" onClick={() => onChange(!value)}>
+    <div 
+      className="flex items-center justify-between py-2.5 px-1 -mx-1 group cursor-pointer transition-colors hover:bg-slate-50 rounded-2xl" 
+      onClick={() => onChange(!value)}
+    >
       <div className="flex-1">
         <h4 className="text-sm font-bold text-slate-800 transition-colors group-hover:text-emerald-700">{label}</h4>
         <p className="text-[10px] text-slate-400 font-medium">{desc}</p>
@@ -74,7 +77,7 @@ const Settings: React.FC<SettingsProps> = ({
 
     return (
       <div className="space-y-2">
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center px-1">
           <span className="text-[10px] font-black text-slate-500 uppercase">{label}</span>
           <span className={`text-[10px] font-black uppercase ${labelColors[theme]}`}>{value}</span>
         </div>
@@ -100,7 +103,7 @@ const Settings: React.FC<SettingsProps> = ({
       <div className="bg-emerald-900 p-8 rounded-[3rem] text-white shadow-xl relative overflow-hidden">
         <div className="absolute top-0 right-0 p-4 opacity-10 text-8xl rotate-12">⚙️</div>
         <div className="relative z-10">
-          <h2 className="text-2xl font-black mb-1 italic tracking-tight">Settings</h2>
+          <h2 className="text-2xl font-black mb-1 italic tracking-tight text-white">Settings</h2>
           <p className="text-emerald-400 text-[10px] font-black uppercase tracking-widest">Customize your experience</p>
         </div>
       </div>
@@ -115,14 +118,14 @@ const Settings: React.FC<SettingsProps> = ({
         <div className="h-[1px] bg-slate-50 w-full"></div>
         <Toggle 
           label="Word-By-Word" 
-          desc="Show meanings per word" 
+          desc="Directly show word meanings in scroll type" 
           value={showWordByWord} 
           onChange={setShowWordByWord} 
         />
         <div className="h-[1px] bg-slate-50 w-full"></div>
         <Toggle 
           label="Tajweed & Tartil" 
-          desc="Show recitation rules and guides" 
+          desc="Directly show rules in scroll box" 
           value={showTajweed} 
           onChange={setShowTajweed} 
         />
@@ -153,7 +156,7 @@ const Settings: React.FC<SettingsProps> = ({
           <button
             onClick={() => setQuranScript('uthmani')}
             className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${
-              quranScript === 'uthmani' ? 'bg-white shadow-sm text-emerald-700' : 'text-slate-500'
+              quranScript === 'uthmani' ? 'bg-white shadow-sm text-emerald-700 font-bold' : 'text-slate-500'
             }`}
           >
             Uthmani
@@ -161,7 +164,7 @@ const Settings: React.FC<SettingsProps> = ({
           <button
             onClick={() => setQuranScript('indopak')}
             className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${
-              quranScript === 'indopak' ? 'bg-white shadow-sm text-emerald-700' : 'text-slate-500'
+              quranScript === 'indopak' ? 'bg-white shadow-sm text-emerald-700 font-bold' : 'text-slate-500'
             }`}
           >
             IndoPak
@@ -170,7 +173,7 @@ const Settings: React.FC<SettingsProps> = ({
       </SettingSection>
 
       <div className="text-center py-6">
-        <p className="text-slate-300 text-[9px] font-black uppercase tracking-widest">Al-Hifz Companion v1.2</p>
+        <p className="text-slate-300 text-[9px] font-black uppercase tracking-widest">Al-Hifz Companion v1.3</p>
       </div>
     </div>
   );
