@@ -4,10 +4,10 @@ import Layout from './components/Layout';
 import AyahReader from './components/AyahReader';
 import HifzTracker from './components/HifzTracker';
 import AIReviewer from './components/AIReviewer';
-import TajweedTips from './components/TajweedTips';
 import HifzMaster from './components/HifzMaster';
+import Settings from './components/Settings';
 import { ViewState, ListMode, HifzProgress, SearchResult, QuranScript, FontSize } from './types';
-import { ALL_SURAH_NAMES, JUZ_DATA } from './data/quranData';
+import { ALL_SURAH_NAMES, JUZ_DATA, SURAH_METADATA } from './data/quranData';
 import { searchQuranContent } from './services/quranService';
 import { transcribeAudio } from './services/geminiService';
 
@@ -20,6 +20,18 @@ const App: React.FC = () => {
   const [selectedSurahId, setSelectedSurahId] = useState<number | null>(null);
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
   
+  const [mushafMode, setMushafMode] = useState<boolean>(() => {
+    return localStorage.getItem('mushaf-mode') === 'true';
+  });
+  const [showWordByWord, setShowWordByWord] = useState<boolean>(() => {
+    const saved = localStorage.getItem('show-wbw');
+    return saved === null ? true : saved === 'true';
+  });
+  const [showTajweed, setShowTajweed] = useState<boolean>(() => {
+    const saved = localStorage.getItem('show-tajweed');
+    return saved === null ? true : saved === 'true';
+  });
+
   const [quranScript, setQuranScript] = useState<QuranScript>(() => {
     const saved = localStorage.getItem('quran-script');
     return (saved as QuranScript) || 'uthmani';
@@ -40,7 +52,6 @@ const App: React.FC = () => {
     return (saved as FontSize) || 'md';
   });
   
-  // Voice Search State
   const [isRecordingSearch, setIsRecordingSearch] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -57,15 +68,14 @@ const App: React.FC = () => {
 
   useEffect(() => {
     localStorage.setItem('quran-script', quranScript);
-  }, [quranScript]);
-
-  useEffect(() => {
     localStorage.setItem('arabic-font-size', arabicFontSize);
     localStorage.setItem('english-font-size', englishFontSize);
     localStorage.setItem('tamil-font-size', tamilFontSize);
-  }, [arabicFontSize, englishFontSize, tamilFontSize]);
+    localStorage.setItem('mushaf-mode', mushafMode.toString());
+    localStorage.setItem('show-wbw', showWordByWord.toString());
+    localStorage.setItem('show-tajweed', showTajweed.toString());
+  }, [quranScript, arabicFontSize, englishFontSize, tamilFontSize, mushafMode, showWordByWord, showTajweed]);
 
-  // Handle global content search
   const handleDeepSearch = async (queryOverride?: string) => {
     const queryToUse = queryOverride !== undefined ? queryOverride : searchQuery;
     if (!queryToUse.trim()) return;
@@ -82,7 +92,6 @@ const App: React.FC = () => {
     }
   };
 
-  // Voice Search Logic
   const startVoiceSearch = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -120,14 +129,6 @@ const App: React.FC = () => {
   const stopVoiceSearch = () => {
     mediaRecorderRef.current?.stop();
     setIsRecordingSearch(false);
-  };
-
-  const copyToClipboard = (res: SearchResult) => {
-    const textToCopy = `${res.surahName} (${res.surahId}:${res.ayahNumber})\n\n${res.arabicText}\n\nEnglish: ${res.snippet}\n\nTamil: ${res.tamilSnippet}`;
-    navigator.clipboard.writeText(textToCopy).then(() => {
-      setCopyStatus(res.surahId + '-' + res.ayahNumber);
-      setTimeout(() => setCopyStatus(null), 2000);
-    });
   };
 
   const toggleStatus = (surahId: number, ayahNum: number, type: 'hifz' | 'recite') => {
@@ -171,11 +172,18 @@ const App: React.FC = () => {
   };
 
   const filteredSurahs = useMemo(() => {
-    return ALL_SURAH_NAMES.map((name, idx) => ({ name, id: idx + 1 }))
-      .filter(s => 
+    return ALL_SURAH_NAMES.map((name, idx) => {
+        const meta = SURAH_METADATA.find(m => m.id === idx + 1);
+        return { 
+            name, 
+            id: idx + 1, 
+            type: meta?.type || 'Meccan', 
+            total: meta?.total_ayahs || 0 
+        };
+    }).filter(s => 
         s.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
         s.id.toString().includes(searchQuery)
-      );
+    );
   }, [searchQuery]);
 
   const filteredJuzs = useMemo(() => {
@@ -187,160 +195,115 @@ const App: React.FC = () => {
 
   const renderSelectionList = () => {
     return (
-      <div className="space-y-3 animate-in fade-in duration-500">
+      <div className="space-y-4 animate-in fade-in duration-500">
         <div className="flex flex-col gap-3">
           <div className="flex items-center justify-between px-1">
-            <h2 className="text-sm font-black text-emerald-800 uppercase tracking-tight">The Holy Quran</h2>
+            <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Explore Al-Quran</h2>
+            <div className="flex gap-2">
+                 <button onClick={() => setListMode('surah')} className={`text-[8px] font-black uppercase px-2 py-1 rounded-lg ${listMode === 'surah' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-400'}`}>Surahs</button>
+                 <button onClick={() => setListMode('juz')} className={`text-[8px] font-black uppercase px-2 py-1 rounded-lg ${listMode === 'juz' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-400'}`}>Juz</button>
+            </div>
           </div>
 
           <div className="space-y-2">
             <div className="relative group">
-              <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-                <span className="text-slate-400 group-focus-within:text-emerald-500 text-sm">🔍</span>
-              </div>
               <input 
                 type="text"
-                placeholder={listMode === 'surah' ? "Search word or topic..." : "Search Juz..."}
+                placeholder="Search surah, verse or topic..."
                 value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  if (e.target.value === '') setSearchResults([]);
-                }}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleDeepSearch()}
-                className="w-full bg-white border border-slate-200 rounded-2xl py-2.5 pl-10 pr-32 text-xs outline-none focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all shadow-sm"
+                className="w-full bg-white border border-slate-200 rounded-2xl py-3 pl-10 pr-3 text-xs outline-none focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-500 shadow-sm"
               />
-              <div className="absolute inset-y-0 right-1.5 flex items-center gap-1">
-                <button 
-                  onClick={isRecordingSearch ? stopVoiceSearch : startVoiceSearch}
-                  className={`p-1.5 rounded-full transition-all flex items-center justify-center ${
-                    isRecordingSearch 
-                      ? 'bg-rose-500 text-white animate-pulse' 
-                      : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
-                  }`}
-                  title="Voice Search"
-                >
-                  <span className="text-base">{isRecordingSearch ? '⏹' : '🎙️'}</span>
-                </button>
-                <button 
-                  onClick={() => handleDeepSearch()}
-                  className="bg-emerald-600 text-white text-[8px] font-black uppercase tracking-wider px-3 py-1.5 rounded-xl hover:bg-emerald-700 transition-colors"
-                >
-                  Search
-                </button>
-              </div>
+              <div className="absolute inset-y-0 left-3 flex items-center text-slate-400">🔍</div>
+              <button 
+                onClick={isRecordingSearch ? stopVoiceSearch : startVoiceSearch}
+                className="absolute right-2 top-2 bottom-2 aspect-square rounded-xl bg-slate-50 flex items-center justify-center text-emerald-600 border border-slate-200"
+              >
+                {isRecordingSearch ? '⏹' : '🎙️'}
+              </button>
             </div>
-            
-            {(isTranscribing || isRecordingSearch) && (
-              <div className="flex items-center gap-2 px-3 animate-pulse">
-                <div className="w-1 h-1 rounded-full bg-emerald-500"></div>
-                <span className="text-[8px] font-black text-emerald-600 uppercase tracking-widest">
-                  {isRecordingSearch ? 'Listening...' : 'Transcribing...'}
-                </span>
-              </div>
-            )}
           </div>
 
           { (isSearchingContent || searchResults.length > 0) && (
-            <div className="bg-slate-900 rounded-2xl p-4 border border-slate-800 animate-in slide-in-from-top-2 shadow-xl overflow-hidden">
-              <div className="flex justify-between items-center mb-3">
-                <h3 className="text-[8px] font-black text-emerald-400 uppercase tracking-widest">Matches for "{searchQuery}"</h3>
-                {isSearchingContent && <div className="w-3 h-3 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin"></div>}
+            <div className="bg-slate-900 rounded-[2.5rem] p-6 border border-slate-800 animate-in slide-in-from-top-2 shadow-xl">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-[9px] font-black text-emerald-400 uppercase tracking-widest">Search Matches</h3>
+                <button onClick={() => setSearchResults([])} className="text-slate-500 text-xs">Close</button>
               </div>
-              <div className="space-y-3 max-h-[300px] overflow-y-auto scrollbar-hide">
-                {searchResults.length === 0 && !isSearchingContent ? (
-                   <p className="text-slate-500 text-[10px] italic text-center py-2">No matches found.</p>
-                ) : (
-                  searchResults.map((res, i) => (
-                    <div 
-                      key={i}
-                      className="w-full bg-white/5 p-3 rounded-xl border border-white/5 text-left hover:bg-white/[0.08] transition-all group relative"
-                    >
-                      <div className="flex justify-between items-center mb-2">
-                        <button 
-                          onClick={() => openSurahById(res.surahId)}
-                          className="text-[9px] font-black text-emerald-400 hover:underline"
-                        >
-                          {res.surahName} {res.surahId}:{res.ayahNumber}
-                        </button>
-                        <button 
-                          onClick={() => copyToClipboard(res)}
-                          className={`p-1 px-2 rounded-lg text-[8px] font-bold transition-all ${
-                            copyStatus === (res.surahId + '-' + res.ayahNumber) ? 'bg-emerald-500 text-white' : 'bg-white/10 text-slate-400'
-                          }`}
-                        >
-                          {copyStatus === (res.surahId + '-' + res.ayahNumber) ? 'Done!' : 'Copy'}
-                        </button>
-                      </div>
-                      <p className={`${quranScript === 'uthmani' ? 'font-uthmani' : 'font-indopak'} text-lg text-right text-white leading-relaxed mb-2 dir-rtl`}>{res.arabicText}</p>
+              <div className="space-y-4 max-h-[350px] overflow-y-auto pr-1">
+                {searchResults.map((res, i) => (
+                  <button 
+                    key={i}
+                    onClick={() => openSurahById(res.surahId)}
+                    className="w-full bg-white/5 p-4 rounded-2xl text-left border border-white/5 hover:border-emerald-500/30 transition-all group"
+                  >
+                    <div className="flex justify-between items-center mb-2">
+                       <span className="text-[9px] font-black text-emerald-500 uppercase">{res.surahName} • {res.surahId}:{res.ayahNumber}</span>
                     </div>
-                  ))
-                )}
+                    <p className={`${quranScript === 'uthmani' ? 'font-uthmani' : 'font-indopak'} text-lg text-white text-right dir-rtl leading-relaxed`}>{res.arabicText}</p>
+                  </button>
+                ))}
               </div>
             </div>
           )}
-
-          <div className="bg-slate-100 p-1 rounded-2xl flex gap-1 shadow-inner">
-            <button
-              onClick={() => setListMode('surah')}
-              className={`flex-1 py-2 text-[9px] font-black uppercase tracking-widest rounded-xl transition-all ${
-                listMode === 'surah' ? 'bg-white shadow-sm text-emerald-700' : 'text-slate-500'
-              }`}
-            >
-              Surahs
-            </button>
-            <button
-              onClick={() => setListMode('juz')}
-              className={`flex-1 py-2 text-[9px] font-black uppercase tracking-widest rounded-xl transition-all ${
-                listMode === 'juz' ? 'bg-white shadow-sm text-emerald-700' : 'text-slate-500'
-              }`}
-            >
-              Juz
-            </button>
-          </div>
         </div>
 
         {listMode === 'surah' ? (
-          <div className="grid grid-cols-1 gap-2">
-            {filteredSurahs.map((surah) => (
-              <button
-                key={surah.id}
-                onClick={() => openSurahById(surah.id)}
-                className="w-full bg-white p-3 rounded-2xl border border-slate-100 flex items-center justify-between transition-all group hover:border-emerald-100 hover:shadow-md"
-              >
-                <div className="flex items-center gap-4 flex-1">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center font-black text-xs border bg-emerald-50 text-emerald-700 border-emerald-100 group-hover:bg-emerald-600 group-hover:text-white transition-all">
-                    {surah.id}
+          <div className="grid grid-cols-1 gap-2.5">
+            {filteredSurahs.map((surah) => {
+              const prog = progress.find(p => p.surahId === surah.id);
+              const memCount = prog?.ayahsMemorized?.length || 0;
+              const surahPercent = surah.total > 0 ? (memCount / surah.total) * 100 : 0;
+              
+              return (
+                <button
+                  key={surah.id}
+                  onClick={() => openSurahById(surah.id)}
+                  className="w-full bg-white p-4 rounded-[2rem] border border-slate-100 flex items-center justify-between transition-all group hover:border-emerald-100 hover:shadow-md active:scale-[0.98]"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="relative w-12 h-12 flex items-center justify-center">
+                        <svg className="w-full h-full transform -rotate-90 absolute">
+                          <circle cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="2.5" fill="transparent" className="text-slate-100" />
+                          <circle cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="2.5" fill="transparent" strokeDasharray={125.6} strokeDashoffset={125.6 * (1 - surahPercent / 100)} className={`${surahPercent > 0 ? 'text-emerald-500' : 'text-transparent'} transition-all duration-1000`} />
+                        </svg>
+                        <span className="font-black text-xs text-slate-800">{surah.id}</span>
+                    </div>
+                    <div className="text-left">
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-bold text-slate-800 text-sm leading-none">{surah.name}</h4>
+                        <span className={`text-[7px] font-black uppercase px-1.5 py-0.5 rounded-full ${surah.type === 'Meccan' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
+                          {surah.type}
+                        </span>
+                      </div>
+                      <span className="text-[8px] text-slate-400 font-bold uppercase tracking-widest mt-1 block">
+                        {surah.total} Ayahs {memCount > 0 && `• ${memCount} Memorized`}
+                      </span>
+                    </div>
                   </div>
-                  <div className="text-left">
-                    <h4 className="font-bold text-slate-800 text-sm">{surah.name}</h4>
-                    <span className="text-[8px] text-slate-400 font-bold uppercase tracking-widest">Surah {surah.id}</span>
+                  <div className="bg-slate-50 p-2 rounded-xl group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                     <span className="text-xs">→</span>
                   </div>
-                </div>
-                <div className="text-right">
-                   <span className="text-[9px] text-emerald-600 font-black uppercase tracking-tighter opacity-0 group-hover:opacity-100 transition-opacity">Read →</span>
-                </div>
-              </button>
-            ))}
+                </button>
+              );
+            })}
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-3">
             {filteredJuzs.map((juz) => (
               <button
                 key={juz.id}
                 onClick={() => openSurahById(juz.startSurah)}
-                className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm hover:border-emerald-100 hover:shadow-md transition-all group text-left flex flex-col justify-between h-28"
+                className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm hover:border-emerald-100 active:scale-[0.98] transition-all group text-left h-36 flex flex-col justify-between"
               >
                 <div>
-                  <h4 className="font-black text-slate-800 text-lg">Juz {juz.id}</h4>
-                  <p className="text-[8px] text-slate-400 font-bold leading-tight mt-1 uppercase tracking-tighter">
-                    Starts: {ALL_SURAH_NAMES[juz.startSurah - 1]}
+                  <h4 className="font-black text-slate-800 text-xl">Juz {juz.id}</h4>
+                  <p className="text-[9px] text-slate-400 font-black leading-tight mt-1 uppercase tracking-tighter">
+                    Starts at {ALL_SURAH_NAMES[juz.startSurah - 1]}
                   </p>
                 </div>
-                <div className="flex justify-between items-end">
-                  <span className="text-[8px] font-black text-emerald-700 bg-emerald-50 px-2 py-1 rounded-lg uppercase">
-                    Begin
-                  </span>
-                </div>
+                <span className="text-[9px] font-black text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-xl uppercase self-start group-hover:bg-emerald-600 group-hover:text-white transition-all">Open Section</span>
               </button>
             ))}
           </div>
@@ -362,6 +325,9 @@ const App: React.FC = () => {
           setEnglishFontSize={setEnglishFontSize}
           tamilFontSize={tamilFontSize}
           setTamilFontSize={setTamilFontSize}
+          mushafMode={mushafMode}
+          showWordByWord={showWordByWord}
+          showTajweed={showTajweed}
           onBack={() => {
             setSelectedSurahId(null);
             setActiveView('surah-list');
@@ -374,18 +340,23 @@ const App: React.FC = () => {
     }
 
     switch (activeView) {
-      case 'surah-list':
-        return renderSelectionList();
-      case 'hifz-master':
-        return <HifzMaster script={quranScript} fontSize={arabicFontSize} setFontSize={setArabicFontSize} />;
-      case 'tracker':
-        return <HifzTracker progress={progress} />;
-      case 'ai-verify':
-        return <AIReviewer script={quranScript} fontSize={arabicFontSize} />;
-      case 'tajweed-tips':
-        return <TajweedTips />;
-      default:
-        return null;
+      case 'surah-list': return renderSelectionList();
+      case 'hifz-master': return <HifzMaster script={quranScript} fontSize={arabicFontSize} setFontSize={setArabicFontSize} />;
+      case 'tracker': return <HifzTracker progress={progress} />;
+      case 'ai-verify': return <AIReviewer script={quranScript} fontSize={arabicFontSize} />;
+      case 'settings':
+        return (
+          <Settings 
+            mushafMode={mushafMode} setMushafMode={setMushafMode}
+            showWordByWord={showWordByWord} setShowWordByWord={setShowWordByWord}
+            showTajweed={showTajweed} setShowTajweed={setShowTajweed}
+            quranScript={quranScript} setQuranScript={setQuranScript}
+            arabicFontSize={arabicFontSize} setArabicFontSize={setArabicFontSize}
+            englishFontSize={englishFontSize} setEnglishFontSize={setEnglishFontSize}
+            tamilFontSize={tamilFontSize} setTamilFontSize={setTamilFontSize}
+          />
+        );
+      default: return null;
     }
   };
 

@@ -2,6 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Surah, Ayah, Word, TajweedRule, QuranScript, FontSize } from '../types';
 import { fetchSurahData, getWordByWordTranslation, getAyahTajweedRules } from '../services/quranService';
+import { getHifzTips } from '../services/geminiService';
 
 interface AyahReaderProps {
   surahId: number;
@@ -13,6 +14,9 @@ interface AyahReaderProps {
   setEnglishFontSize: (s: FontSize) => void;
   tamilFontSize: FontSize;
   setTamilFontSize: (s: FontSize) => void;
+  mushafMode: boolean;
+  showWordByWord: boolean;
+  showTajweed: boolean;
   onBack: () => void;
   isAyahMemorized: (surahId: number, ayahNum: number) => boolean;
   isAyahRecited: (surahId: number, ayahNum: number) => boolean;
@@ -26,13 +30,11 @@ const AyahReader: React.FC<AyahReaderProps> = ({
   arabicFontSize, setArabicFontSize, 
   englishFontSize, setEnglishFontSize, 
   tamilFontSize, setTamilFontSize,
+  mushafMode, showWordByWord, showTajweed,
   onBack, isAyahMemorized, isAyahRecited, toggleStatus 
 }) => {
   const [surah, setSurah] = useState<Surah | null>(null);
   const [loading, setLoading] = useState(true);
-  const [showWordByWord, setShowWordByWord] = useState(true);
-  const [showTajweed, setShowTajweed] = useState(true);
-  const [isMushafMode, setIsMushafMode] = useState(false);
   const [playingAyah, setPlayingAyah] = useState<number | null>(null);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const [wbwData, setWbwData] = useState<Record<number, Word[]>>({});
@@ -40,6 +42,11 @@ const AyahReader: React.FC<AyahReaderProps> = ({
   const [loadingTajweed, setLoadingTajweed] = useState<Record<number, boolean>>({});
   const [loadingWbw, setLoadingWbw] = useState<Record<number, boolean>>({});
   const [copyStatus, setCopyStatus] = useState<number | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  
+  const [showInsights, setShowInsights] = useState(false);
+  const [insights, setInsights] = useState<string | null>(null);
+  const [loadingInsights, setLoadingInsights] = useState(false);
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -49,10 +56,6 @@ const AyahReader: React.FC<AyahReaderProps> = ({
       try {
         const data = await fetchSurahData(surahId);
         setSurah(data);
-        // Pre-fetch first 5 Ayahs details
-        data.ayahs.slice(0, 5).forEach(ayah => {
-          preFetchAyahDetails(ayah);
-        });
       } catch (err) {
         console.error(err);
       } finally {
@@ -65,21 +68,33 @@ const AyahReader: React.FC<AyahReaderProps> = ({
     };
   }, [surahId]);
 
-  const preFetchAyahDetails = async (ayah: Ayah) => {
-    loadWbw(ayah);
-    loadTajweed(ayah);
+  const fetchInsights = async () => {
+    if (insights || loadingInsights || !surah) return;
+    setLoadingInsights(true);
+    setErrorMessage(null);
+    try {
+      const tips = await getHifzTips(surah.name);
+      setInsights(tips);
+    } catch (err) {
+      setErrorMessage("AI Quota busy. Please wait a moment.");
+      setTimeout(() => setErrorMessage(null), 5000);
+    } finally {
+      setLoadingInsights(false);
+    }
   };
 
   const loadWbw = async (ayah: Ayah) => {
     if ((wbwData[ayah.number] && wbwData[ayah.number].length > 0) || loadingWbw[ayah.number]) return;
     setLoadingWbw(prev => ({ ...prev, [ayah.number]: true }));
+    setErrorMessage(null);
     try {
       const words = await getWordByWordTranslation(ayah.text);
       if (words && words.length > 0) {
         setWbwData(prev => ({ ...prev, [ayah.number]: words }));
       }
     } catch (err) {
-      console.error("WBW Loading failed", err);
+      setErrorMessage("Quota limit hit. Gemini is resting...");
+      setTimeout(() => setErrorMessage(null), 8000);
     } finally {
       setLoadingWbw(prev => ({ ...prev, [ayah.number]: false }));
     }
@@ -88,13 +103,15 @@ const AyahReader: React.FC<AyahReaderProps> = ({
   const loadTajweed = async (ayah: Ayah) => {
     if ((tajweedData[ayah.number] && tajweedData[ayah.number].length > 0) || loadingTajweed[ayah.number]) return;
     setLoadingTajweed(prev => ({ ...prev, [ayah.number]: true }));
+    setErrorMessage(null);
     try {
       const rules = await getAyahTajweedRules(ayah.text);
       if (rules && rules.length > 0) {
         setTajweedData(prev => ({ ...prev, [ayah.number]: rules }));
       }
     } catch (err) {
-      console.error("Tajweed Loading failed", err);
+      setErrorMessage("Tajweed analysis quota limited. Try again in 10s.");
+      setTimeout(() => setErrorMessage(null), 8000);
     } finally {
       setLoadingTajweed(prev => ({ ...prev, [ayah.number]: false }));
     }
@@ -197,101 +214,76 @@ const AyahReader: React.FC<AyahReaderProps> = ({
 
   if (!surah) return <div>Error loading Surah.</div>;
 
+  const memorizedCount = surah.ayahs.filter(a => isAyahMemorized(surahId, a.number)).length;
+  const progressPercent = (memorizedCount / surah.total_ayahs) * 100;
+
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
-      <div className="flex items-center justify-between mb-4">
-        <button onClick={onBack} className="text-emerald-700 font-bold flex items-center gap-1 hover:bg-emerald-50 px-2 py-1 rounded-lg transition-colors text-sm">
+      {errorMessage && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[100] bg-rose-600 text-white px-6 py-3 rounded-2xl shadow-2xl text-[10px] font-black uppercase tracking-widest animate-in slide-in-from-top-4 duration-300">
+          ⚠️ {errorMessage}
+        </div>
+      )}
+
+      <div className="sticky top-[68px] z-40 bg-white/80 backdrop-blur-md -mx-3 px-3 py-3 border-b border-slate-100 mb-6 flex items-center justify-between">
+        <button onClick={onBack} className="text-emerald-700 font-bold flex items-center gap-1 hover:bg-emerald-50 px-3 py-2 rounded-xl transition-all">
           ← Back
         </button>
-        <div className="text-right">
-          <h2 className="text-lg font-bold text-slate-800 leading-none mb-1">{surah.name}</h2>
-          <span className="text-slate-400 text-[10px] font-bold uppercase tracking-tight">{surah.name_ar} • {surah.total_ayahs} Ayahs</span>
+        <div className="text-center flex-1">
+          <h2 className="text-lg font-black text-slate-800 leading-none">{surah.name}</h2>
+          <div className="flex items-center justify-center gap-2 mt-1">
+             <div className="h-1.5 w-20 bg-slate-100 rounded-full overflow-hidden">
+                <div className="h-full bg-emerald-500 transition-all duration-1000" style={{ width: `${progressPercent}%` }}></div>
+             </div>
+             <span className="text-[9px] font-black text-slate-400 uppercase">{Math.round(progressPercent)}%</span>
+          </div>
         </div>
+        <button 
+          onClick={() => { setShowInsights(!showInsights); fetchInsights(); }} 
+          className={`p-2 rounded-xl border transition-all ${showInsights ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg' : 'bg-white border-slate-200 text-slate-400'}`}
+        >
+          ✨
+        </button>
       </div>
 
-      <div className="mb-6 space-y-3">
-        <div className="flex flex-wrap gap-2 items-center justify-between bg-slate-50 p-2 rounded-2xl border border-slate-100">
-          <div className="flex gap-1.5 items-center">
-            <button 
-              onClick={() => setIsMushafMode(!isMushafMode)}
-              className={`px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all ${
-                isMushafMode ? 'bg-slate-800 border-slate-700 text-white shadow-sm' : 'bg-white border-slate-200 text-slate-500'
-              }`}
-            >
-              Mushaf
-            </button>
-            <div className="w-[1px] h-4 bg-slate-200 mx-1"></div>
-            <button 
-              onClick={() => setShowWordByWord(!showWordByWord)}
-              className={`px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all flex items-center gap-1 ${
-                showWordByWord ? 'bg-emerald-600 border-emerald-500 text-white shadow-sm' : 'bg-white border-slate-200 text-slate-400'
-              }`}
-            >
-              <span>WBW</span>
-              <span className="opacity-50 text-[7px]">{showWordByWord ? 'ON' : 'OFF'}</span>
-            </button>
-            <button 
-              onClick={() => setShowTajweed(!showTajweed)}
-              className={`px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all flex items-center gap-1 ${
-                showTajweed ? 'bg-indigo-600 border-indigo-500 text-white shadow-sm' : 'bg-white border-slate-200 text-slate-400'
-              }`}
-            >
-              <span>Tajweed</span>
-              <span className="opacity-50 text-[7px]">{showTajweed ? 'ON' : 'OFF'}</span>
-            </button>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <select 
-              value={playbackSpeed} 
-              onChange={(e) => setPlaybackSpeed(parseFloat(e.target.value))}
-              className="bg-white border border-slate-200 rounded-lg text-[9px] font-black uppercase px-2 py-1 outline-none"
-            >
-              <option value="0.5">0.5x</option>
-              <option value="0.75">0.75x</option>
-              <option value="1">1.0x</option>
-              <option value="1.25">1.25x</option>
-              <option value="1.5">1.5x</option>
-              <option value="2">2.0x</option>
-            </select>
-          </div>
-        </div>
-
-        <div className="bg-white border border-slate-100 p-3 rounded-2xl shadow-sm space-y-2">
-          {[
-            { label: 'AR', color: 'emerald', val: arabicFontSize, setter: setArabicFontSize },
-            { label: 'EN', color: 'slate', val: englishFontSize, setter: setEnglishFontSize },
-            { label: 'TA', color: 'indigo', val: tamilFontSize, setter: setTamilFontSize }
-          ].map((f) => (
-            <div key={f.label} className="flex items-center justify-between gap-3">
-              <span className={`text-[8px] font-black text-${f.color}-700 uppercase tracking-widest w-4`}>{f.label}</span>
-              <div className={`flex-1 bg-${f.color}-50 p-0.5 rounded-lg flex gap-1`}>
-                {(['sm', 'md', 'lg', 'xl'] as FontSize[]).map(size => (
-                  <button 
-                      key={size}
-                      onClick={() => f.setter(size)}
-                      className={`flex-1 py-1 rounded-md text-[8px] font-black uppercase transition-all ${
-                        f.val === size ? `bg-${f.color}-600 text-white shadow-sm` : `text-${f.color}-400`
-                      }`}
-                    >
-                      {size}
-                    </button>
-                ))}
-              </div>
+      {showInsights && (
+        <div className="bg-gradient-to-br from-indigo-900 to-slate-900 text-white p-6 rounded-[2.5rem] shadow-xl mb-8 animate-in slide-in-from-top-4 duration-500 relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-4 opacity-10 text-7xl rotate-12">💎</div>
+          <div className="relative z-10 space-y-4">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white text-xs">AI</span>
+              <h3 className="text-[10px] font-black uppercase tracking-widest text-indigo-300">Surah Insights & Hifz Tips</h3>
             </div>
-          ))}
+            {loadingInsights ? (
+              <div className="space-y-3 animate-pulse">
+                <div className="h-4 bg-white/10 rounded w-3/4"></div>
+                <div className="h-4 bg-white/10 rounded w-full"></div>
+                <div className="h-4 bg-white/10 rounded w-2/3"></div>
+              </div>
+            ) : (
+              <div className="text-[11px] leading-relaxed whitespace-pre-wrap font-medium text-slate-200 prose prose-invert">
+                {insights || "Insights temporarily unavailable due to quota constraints."}
+              </div>
+            )}
+            <button 
+              onClick={() => setShowInsights(false)}
+              className="w-full py-2.5 bg-white/10 border border-white/10 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-white/20"
+            >
+              Close Panel
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
-      <div className={`${isMushafMode ? 'bg-white border border-slate-100 rounded-[2.5rem] p-6 shadow-lg space-y-6' : 'space-y-8'}`}>
+      <div className={`${mushafMode ? 'bg-white border border-slate-100 rounded-[2.5rem] p-6 shadow-lg space-y-6' : 'space-y-8'}`}>
         {surah.ayahs.map((ayah) => {
           const showBismillahHeader = ayah.number === 1 && surah.id !== 1 && surah.id !== 9;
           const arabicClass = script === 'uthmani' ? 'font-uthmani' : 'font-indopak';
-          const arabicSizeClass = getArabicFontSizeClass(isMushafMode);
+          const arabicSizeClass = getArabicFontSizeClass(mushafMode);
           const englishSizeClass = getEnglishFontSizeClass();
           const tamilSizeClass = getTamilFontSizeClass();
 
-          if (isMushafMode) {
+          if (mushafMode) {
             return (
               <div key={ayah.number} className="animate-in fade-in duration-700">
                 {showBismillahHeader && (
@@ -311,14 +303,13 @@ const AyahReader: React.FC<AyahReaderProps> = ({
                 >
                   <div className={`${arabicClass} ${arabicSizeClass} text-right text-slate-800 dir-rtl selection:bg-emerald-200 tracking-wide font-medium`}>
                     {ayah.text}
-                    <span className="inline-flex items-center justify-center w-10 h-10 bg-slate-50 border border-slate-200 rounded-full text-[12px] font-black font-sans mx-3 align-middle text-emerald-800 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                    <span className={`inline-flex items-center justify-center w-10 h-10 border rounded-full text-[12px] font-black font-sans mx-3 align-middle transition-all ${
+                      isAyahMemorized(surahId, ayah.number) 
+                        ? 'bg-emerald-600 border-emerald-500 text-white shadow-sm' 
+                        : 'bg-slate-50 border-slate-200 text-emerald-800'
+                    }`}>
                       {ayah.number}
                     </span>
-                  </div>
-                  <div className="flex justify-end gap-1.5 mt-1.5 items-center">
-                    <button onClick={(e) => { e.stopPropagation(); handleShare(ayah); }} className="text-[10px] opacity-20 hover:opacity-100 p-1">🔗</button>
-                    {isAyahMemorized(surah.id, ayah.number) && <span className="w-1 h-1 rounded-full bg-emerald-500"></span>}
-                    {isAyahRecited(surah.id, ayah.number) && <span className="w-1 h-1 rounded-full bg-blue-500"></span>}
                   </div>
                 </div>
               </div>
@@ -347,7 +338,9 @@ const AyahReader: React.FC<AyahReaderProps> = ({
 
               <div className="flex justify-between items-center mb-6">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-slate-50 text-emerald-700 flex items-center justify-center text-[9px] font-black border border-slate-100">
+                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-[9px] font-black border transition-colors ${
+                    isAyahMemorized(surahId, ayah.number) ? 'bg-emerald-600 text-white border-emerald-500' : 'bg-slate-50 text-emerald-700 border-slate-100'
+                  }`}>
                     {ayah.number}
                   </div>
                   <button 

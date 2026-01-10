@@ -14,7 +14,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeView, onViewChange }) =
     { id: 'hifz-master', label: 'Practice', icon: '🎯' },
     { id: 'tracker', label: 'Tracker', icon: '📈' },
     { id: 'ai-verify', label: 'AI Review', icon: '🎙️' },
-    { id: 'tajweed-tips', label: 'Tajweed', icon: '✨' },
+    { id: 'settings', label: 'Settings', icon: '⚙️' },
   ];
 
   return (

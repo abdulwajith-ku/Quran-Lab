@@ -63,7 +63,7 @@ export interface PastReview {
   audioBase64: string;
 }
 
-export type ViewState = 'surah-list' | 'reader' | 'tracker' | 'ai-verify' | 'tajweed-tips' | 'hifz-master';
+export type ViewState = 'surah-list' | 'reader' | 'tracker' | 'ai-verify' | 'hifz-master' | 'settings';
 export type ListMode = 'surah' | 'juz';
 export type HifzMethod = 'standard' | 'chain';
 export type QuranScript = 'uthmani' | 'indopak';
